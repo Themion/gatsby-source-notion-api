@@ -1,22 +1,22 @@
-const { blockToString } = require("../block-to-string")
+const { blockToString } = require('../block-to-string');
 
 exports.getNotionPageProperties = (page) =>
-	Object.keys(page.properties).reduce((acc, key) => {
-		if (page.properties[key].type == "title") {
-			return acc
+	Object.entries(page.properties).reduce((acc, [key, value]) => {
+		if (value.type == 'title') {
+			return acc;
 		}
 
-		if (page.properties[key].type == "rich_text") {
-			page.properties[key].rich_text = blockToString(page.properties[key].rich_text)
+		if (value.type == 'rich_text') {
+			value.rich_text = blockToString(value.rich_text);
 		}
 
 		return {
 			...acc,
 			[key]: {
-				id: page.properties[key].id,
+				id: value.id,
 				key,
-				value: page.properties[key][page.properties[key].type],
-				type: page.properties[key].type,
+				value: value[value.type],
+				type: value.type,
 			},
-		}
-	}, {})
+		};
+	}, {});

@@ -24,11 +24,8 @@ exports.sourceNodes = async (
 		let markdown = notionBlockToMarkdown(page, lowerTitleLevel);
 
 		if (propsToFrontmatter) {
-			const frontmatter = Object.keys(properties).reduce(
-				(acc, key) => ({
-					...acc,
-					[key]: properties[key].value,
-				}),
+			const frontmatter = Object.entries(properties).reduce(
+				(acc, [key, { value }]) => ({ ...acc, [key]: value }),
 				{ title },
 			);
 
