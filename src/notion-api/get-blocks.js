@@ -1,28 +1,20 @@
 const fetch = require('node-fetch');
 const { errorMessage } = require('../error-message');
+const { Client } = require('@notionhq/client');
 
 exports.getBlocks = async ({ id, notionVersion, token }, reporter) => {
-  let hasMore = true;
+  const notion = new Client({ auth: token, notionVersion });
   let blockContent = [];
   let startCursor = '';
 
-  while (hasMore) {
-    let url = `https://api.notion.com/v1/blocks/${id}/children`;
-
-    if (startCursor) {
-      url += `?start_cursor=${startCursor}`;
-    }
-
+  do {
     try {
-      const result = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Notion-Version': notionVersion,
-          Authorization: `Bearer ${token}`,
-        },
-      }).then((res) => res.json());
+      const { results, next_cursor } = await notion.blocks.children.list({
+        block_id: id,
+        start_cursor: startCursor,
+      });
 
-      for (let childBlock of result.results) {
+      for (let childBlock of results) {
         if (childBlock.has_children) {
           childBlock.children = await this.getBlocks(
             { id: childBlock.id, notionVersion, token },
@@ -31,13 +23,12 @@ exports.getBlocks = async ({ id, notionVersion, token }, reporter) => {
         }
       }
 
-      blockContent = blockContent.concat(result.results);
-      startCursor = result.next_cursor;
-      hasMore = result.has_more;
+      blockContent = blockContent.concat(results);
+      startCursor = next_cursor;
     } catch (e) {
       reporter.panic(errorMessage);
     }
-  }
+  } while (!!startCursor);
 
   return blockContent;
 };
