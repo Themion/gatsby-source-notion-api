@@ -1,6 +1,7 @@
 const fetch = require('node-fetch');
 const { errorMessage } = require('../error-message');
 const { getBlocks } = require('./get-blocks');
+const { Client } = require('@notionhq/client');
 
 async function fetchPageChildren({ page, token, notionVersion }, reporter, cache) {
   let cacheKey = `notionApiPageChildren:${page.id}:${page.last_edited_time}`;
@@ -17,42 +18,28 @@ async function fetchPageChildren({ page, token, notionVersion }, reporter, cache
 }
 
 exports.getPages = async ({ token, databaseId, notionVersion }, reporter, cache) => {
-  let hasMore = true;
-  let startCursor = '';
-  const url = `https://api.notion.com/v1/databases/${databaseId}/query`;
-  const body = {
-    page_size: 100,
-  };
-
+  const notion = new Client({ auth: token, notionVersion });
   const pages = [];
 
-  while (hasMore) {
-    if (startCursor) {
-      body.start_cursor = startCursor;
-    }
+  let startCursor = undefined;
 
+  do {
     try {
-      const result = await fetch(url, {
-        method: 'POST',
-        body: JSON.stringify(body),
-        headers: {
-          'Content-Type': 'application/json',
-          'Notion-Version': notionVersion,
-          Authorization: `Bearer ${token}`,
-        },
-      }).then((res) => res.json());
+      const { results, next_cursor } = await notion.databases.query({
+        database_id: databaseId,
+        start_cursor: startCursor,
+      });
 
-      startCursor = result.next_cursor;
-      hasMore = result.has_more;
+      startCursor = next_cursor;
 
-      for (let page of result.results) {
+      for (let page of results) {
         page.children = await fetchPageChildren({ page, token, notionVersion }, reporter, cache);
         pages.push(page);
       }
     } catch (e) {
       reporter.panic(errorMessage);
     }
-  }
+  } while (!!startCursor);
 
   return pages;
 };
