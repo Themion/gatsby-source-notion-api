@@ -11,7 +11,7 @@
     "format": "prettier --write *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "lint": "prettier -c *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "commit": "gitmoji --commit",
-    "build": "echo \"No build script setup\""
+    "build": "tsc"
   },
   "keywords": [
     "gatsby",
