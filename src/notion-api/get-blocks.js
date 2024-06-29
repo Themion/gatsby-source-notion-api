@@ -5,7 +5,7 @@ const { Client } = require('@notionhq/client');
 exports.getBlocks = async ({ id, notionVersion, token }, reporter) => {
   const notion = new Client({ auth: token, notionVersion });
   let blockContent = [];
-  let startCursor = '';
+  let startCursor = undefined;
 
   do {
     try {
