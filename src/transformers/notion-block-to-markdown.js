@@ -35,12 +35,6 @@ exports.notionBlockToMarkdown = (block, lowerTitleLevel) => {
     : null;
   let markdown = [blockMarkdown, childMarkdown].filter((text) => text).join(DOUBLE_EOL_MD);
 
-  // Table row
-  // TODO: This should be moved to the new Notion type.
-  if (block.type == 'paragraph' && blockMarkdown.startsWith('|') && blockMarkdown.endsWith('|')) {
-    return markdown.concat(EOL_MD);
-  }
-
   // Paragraph
   if (block.type == 'paragraph') {
     return [EOL_MD, markdown, EOL_MD].join('');

@@ -25,6 +25,7 @@
     "url": "git+ssh://git@github.com/Themion/gatsby-source-notion-api.git"
   },
   "dependencies": {
+    "@notionhq/client": "^2.2.15",
     "node-fetch": "^2.6.1",
     "or-pipets": "^1.0.1",
     "yaml": "^1.10.2"
@@ -38,5 +39,6 @@
     "hooks": {
       "pre-push": "pnpm run lint"
     }
-  }
+  },
+  "packageManager": "pnpm@9.1.2+sha1.907f57a52517de34399d66401bf220a549e47b57"
 }
