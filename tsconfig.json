@@ -6,6 +6,7 @@
     "forceConsistentCasingInFileNames": true,
     "incremental": true,
     "lib": ["ES2015", "DOM"],
+    "moduleResolution": "NodeNext",
     "noFallthroughCasesInSwitch": false,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

@@ -1,4 +1,4 @@
-const { blockToString } = require('../block-to-string');
+import { blockToString } from '../block-to-string';
 
 const EOL_MD = '\n';
 const DOUBLE_EOL_MD = EOL_MD.repeat(2);
@@ -17,10 +17,10 @@ function prependToLines(content, string, useSpaces = true) {
 }
 
 // Converts a notion block to a markdown string.
-exports.notionBlockToMarkdown = (block, lowerTitleLevel) => {
+export const notionBlockToMarkdown = (block, lowerTitleLevel) => {
   // Get the child content of the block.
   let childMarkdown = (block.children ?? [])
-    .map((block) => this.notionBlockToMarkdown(block, lowerTitleLevel))
+    .map((block) => notionBlockToMarkdown(block, lowerTitleLevel))
     .join('')
     .trim();
 
