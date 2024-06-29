@@ -1,4 +1,3 @@
-const fetch = require('node-fetch');
 const { errorMessage } = require('../error-message');
 const { getBlocks } = require('./get-blocks');
 const { Client } = require('@notionhq/client');

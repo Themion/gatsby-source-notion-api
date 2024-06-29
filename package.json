@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
-    "node-fetch": "^2.6.1",
     "or-pipets": "^1.0.1",
     "yaml": "^1.10.2"
   },

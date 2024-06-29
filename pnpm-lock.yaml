@@ -11,9 +11,6 @@ importers:
       '@notionhq/client':
         specifier: ^2.2.15
         version: 2.2.15
-      node-fetch:
-        specifier: ^2.6.1
-        version: 2.7.0
       or-pipets:
         specifier: ^1.0.1
         version: 1.0.1
