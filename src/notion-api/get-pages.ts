@@ -4,8 +4,9 @@ import {
   PageObjectResponse,
 } from '@notionhq/client/build/src/api-endpoints';
 import type { GatsbyCache, Reporter } from 'gatsby';
+import { NotionAPIPage } from 'src/types/notion';
 import { errorMessage } from '../error-message';
-import { Block, NotionAPIPage, Page } from '../types';
+import { Block, Page } from '../types';
 import { isFulfilled, isPageAccessible } from '../utils';
 import { getBlocks } from './get-blocks';
 

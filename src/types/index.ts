@@ -1,7 +1,5 @@
 import type { NotionAPIBlock, NotionAPIDatabase, NotionAPIPage, NotionAPIUser } from './notion';
 
-export * from './notion';
-
 /*
  * Helper
  */

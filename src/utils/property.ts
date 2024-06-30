@@ -1,13 +1,12 @@
-import { blockToString } from '../block-to-string';
 import {
   InaccessibleNotionAPIUser,
-  NormalizedValue,
   NotionAPIFile,
   NotionAPIPropertyValue,
   NotionAPIPropertyValueWithoutID,
   NotionAPIUser,
-  Person,
-} from '../types';
+} from 'src/types/notion';
+import { blockToString } from '../block-to-string';
+import { NormalizedValue, Person } from '../types';
 
 /**
  * indicates if a property is accessible
