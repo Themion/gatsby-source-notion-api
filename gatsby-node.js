@@ -7,49 +7,44 @@ const YAML = require('yaml');
 const NOTION_NODE_TYPE = 'Notion';
 
 exports.sourceNodes = async (
-	{ actions, createContentDigest, createNodeId, reporter, cache },
-	{
-		token,
-		databaseId,
-		notionVersion = '2022-06-28',
-		propsToFrontmatter = true,
-		lowerTitleLevel = true,
-	},
+  { actions, createContentDigest, createNodeId, reporter, cache },
+  {
+    token,
+    databaseId,
+    notionVersion = '2022-06-28',
+    propsToFrontmatter = true,
+    lowerTitleLevel = true,
+  },
 ) => {
-	const pages = await getPages({ token, databaseId, notionVersion }, reporter, cache);
+  const pages = await getPages({ token, databaseId, notionVersion }, reporter, cache);
 
-	pages.forEach((page) => {
-		const title = getNotionPageTitle(page);
-		const properties = getNotionPageProperties(page);
-		let markdown = notionBlockToMarkdown(page, lowerTitleLevel);
+  pages.forEach((page) => {
+    const title = getNotionPageTitle(page);
+    const properties = getNotionPageProperties(page, reporter);
+    let markdown = notionBlockToMarkdown(page, lowerTitleLevel);
 
-		if (propsToFrontmatter) {
-			const frontmatter = Object.entries(properties).reduce(
-				(acc, [key, { value }]) => ({ ...acc, [key]: value }),
-				{ title },
-			);
+    if (propsToFrontmatter) {
+      markdown = '---\n'.concat(YAML.stringify(properties)).concat('\n---\n\n').concat(markdown);
+    }
 
-			markdown = '---\n'.concat(YAML.stringify(frontmatter)).concat('\n---\n\n').concat(markdown);
-		}
-
-		actions.createNode({
-			id: createNodeId(`${NOTION_NODE_TYPE}-${databaseId}-${page.id}`),
-			title,
-			properties,
-			archived: page.archived,
-			createdAt: page.created_time,
-			updatedAt: page.last_edited_time,
-			markdownString: markdown,
-			raw: page,
-			json: JSON.stringify(page),
-			parent: null,
-			children: [],
-			internal: {
-				type: NOTION_NODE_TYPE,
-				mediaType: 'text/markdown',
-				content: markdown,
-				contentDigest: createContentDigest(page),
-			},
-		});
-	});
+    actions.createNode({
+      id: createNodeId(`${NOTION_NODE_TYPE}-${databaseId}-${page.id}`),
+      title,
+      properties,
+      archived: page.archived,
+      createdAt: page.created_time,
+      updatedAt: page.last_edited_time,
+      markdownString: markdown,
+      raw: page,
+      json: JSON.stringify(page),
+      parent: null,
+      children: [],
+      internal: {
+        type: NOTION_NODE_TYPE,
+        mediaType: 'text/markdown',
+        content: markdown,
+        contentDigest: createContentDigest(page),
+      },
+    });
+  });
 };
