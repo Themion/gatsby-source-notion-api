@@ -44,117 +44,77 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
   let blockMarkdown = blockToString(textProperty).trim();
   let markdown = [blockMarkdown, childMarkdown].filter((text) => text).join(DOUBLE_EOL_MD);
 
-  // Paragraph
-  if (block.type == 'paragraph') {
-    return [EOL_MD, markdown, EOL_MD].join('');
+  switch (block.type) {
+    case 'paragraph':
+      return [EOL_MD, markdown, EOL_MD].join('');
+    case 'heading_1':
+    case 'heading_2':
+    case 'heading_3':
+      const headingLevel = Number(block.type.split('_')[1]);
+      const headingSymbol = (lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
+      return [EOL_MD, prependToLines(markdown, headingSymbol), EOL_MD].join('');
+    case 'to_do':
+      const toDoSymbol = `- [${block.to_do.checked ? 'x' : ' '}] `;
+      return prependToLines(markdown, toDoSymbol).concat(EOL_MD);
+    case 'bulleted_list_item':
+      return prependToLines(markdown, '*').concat(EOL_MD);
+    case 'numbered_list_item':
+      return prependToLines(markdown, '1.').concat(EOL_MD);
+    case 'toggle':
+      return [
+        EOL_MD,
+        '<details><summary>',
+        blockMarkdown,
+        '</summary>',
+        childMarkdown,
+        '</details>',
+        EOL_MD,
+      ].join('');
+    case 'code':
+      return [
+        EOL_MD,
+        `\`\`\` ${block.code.language}${EOL_MD}`,
+        blockMarkdown,
+        EOL_MD,
+        '```',
+        EOL_MD,
+        childMarkdown,
+        EOL_MD,
+      ].join('');
+    case 'image':
+      const imageUrl =
+        block.image.type == 'external' ? block.image.external.url : block.image.file.url;
+      return `${EOL_MD}![${blockToString(block.image.caption)}](${imageUrl})${EOL_MD}`;
+    case 'audio':
+      const audioUrl =
+        block.audio.type == 'external' ? block.audio.external.url : block.audio.file.url;
+      return [EOL_MD, '<audio controls>', `<source src="${audioUrl}" />`, '</audio>', EOL_MD].join(
+        '',
+      );
+    case 'video':
+      const videoUrl =
+        block.video.type === 'external' ? block.video.external.url : block.video.file.url;
+      return [EOL_MD, videoUrl, EOL_MD].join('');
+    case 'embed':
+      return [EOL_MD, block.embed.url, EOL_MD].join('');
+    case 'quote':
+      return [EOL_MD, prependToLines(markdown, '>', false), EOL_MD].join('');
+    case 'bookmark':
+      const bookmarkUrl = block.bookmark.url;
+      const bookmarkCaption = blockToString(block.bookmark.caption) || bookmarkUrl;
+      return `${EOL_MD}[${bookmarkCaption}](${bookmarkUrl})${EOL_MD}`;
+    case 'divider':
+      return `${EOL_MD}---${EOL_MD}`;
+    case 'column_list':
+      return [EOL_MD, '<ColumnList>', EOL_MD, markdown, EOL_MD, '</ColumnList>', EOL_MD].join('');
+    case 'column':
+      return ['<Column>', EOL_MD, EOL_MD, markdown, EOL_MD, EOL_MD, '</Column>', EOL_MD].join('');
+    // TODO: Add support for table, callouts, and files
+    default:
+      return [
+        EOL_MD,
+        `<!-- This block type '${block.type}' is not supported yet. -->`,
+        EOL_MD,
+      ].join('');
   }
-
-  // Heading
-  if (block.type.startsWith('heading_')) {
-    const headingLevel = Number(block.type.split('_')[1]);
-    let symbol = (lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
-    return [EOL_MD, prependToLines(markdown, symbol), EOL_MD].join('');
-  }
-
-  // To do list item
-  if (block.type == 'to_do') {
-    let symbol = `- [${block.to_do.checked ? 'x' : ' '}] `;
-    return prependToLines(markdown, symbol).concat(EOL_MD);
-  }
-
-  // Bulleted list item
-  if (block.type == 'bulleted_list_item') {
-    return prependToLines(markdown, '*').concat(EOL_MD);
-  }
-
-  // Numbered list item
-  if (block.type == 'numbered_list_item') {
-    return prependToLines(markdown, '1.').concat(EOL_MD);
-  }
-
-  // Toggle
-  if (block.type == 'toggle') {
-    return [
-      EOL_MD,
-      '<details><summary>',
-      blockMarkdown,
-      '</summary>',
-      childMarkdown,
-      '</details>',
-      EOL_MD,
-    ].join('');
-  }
-
-  // Code
-  if (block.type == 'code') {
-    return [
-      EOL_MD,
-      `\`\`\` ${block.code.language}${EOL_MD}`,
-      blockMarkdown,
-      EOL_MD,
-      '```',
-      EOL_MD,
-      childMarkdown,
-      EOL_MD,
-    ].join('');
-  }
-
-  // Image
-  if (block.type == 'image') {
-    const imageUrl =
-      block.image.type == 'external' ? block.image.external.url : block.image.file.url;
-    return `${EOL_MD}![${blockToString(block.image.caption)}](${imageUrl})${EOL_MD}`;
-  }
-
-  // Audio
-  if (block.type == 'audio') {
-    const audioUrl =
-      block.audio.type == 'external' ? block.audio.external.url : block.audio.file.url;
-    return [EOL_MD, '<audio controls>', `<source src="${audioUrl}" />`, '</audio>', EOL_MD].join(
-      '',
-    );
-  }
-
-  // Video
-  if (block.type == 'video' && block.video.type == 'external') {
-    return [EOL_MD, block.video.external.url, EOL_MD].join('');
-  }
-
-  // Embed
-  if (block.type == 'embed') {
-    return [EOL_MD, block.embed.url, EOL_MD].join('');
-  }
-
-  // Quote
-  if (block.type == 'quote') {
-    return [EOL_MD, prependToLines(markdown, '>', false), EOL_MD].join('');
-  }
-
-  // Bookmark
-  if (block.type == 'bookmark') {
-    const bookmarkUrl = block.bookmark.url;
-    const bookmarkCaption = blockToString(block.bookmark.caption) || bookmarkUrl;
-    return `${EOL_MD}[${bookmarkCaption}](${bookmarkUrl})${EOL_MD}`;
-  }
-
-  // Divider
-  if (block.type == 'divider') {
-    return `${EOL_MD}---${EOL_MD}`;
-  }
-
-  // Column List
-  if (block.type == 'column_list') {
-    return [EOL_MD, '<ColumnList>', EOL_MD, markdown, EOL_MD, '</ColumnList>', EOL_MD].join('');
-  }
-
-  // Column
-  if (block.type == 'column') {
-    return ['<Column>', EOL_MD, EOL_MD, markdown, EOL_MD, EOL_MD, '</Column>', EOL_MD].join('');
-  }
-
-  // Unsupported types.
-  // TODO: Add support for callouts, internal video, and files
-  return [EOL_MD, `<!-- This block type '${block.type}' is not supported yet. -->`, EOL_MD].join(
-    '',
-  );
 };
