@@ -3,15 +3,12 @@
   "version": "0.0.0",
   "description": "Gatsby source plugin for official Notion.so API",
   "main": "index.js",
-  "publishConfig": {
-    "registry": "https://registry-url",
-    "access": "public"
-  },
   "scripts": {
     "format": "prettier --write *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "lint": "prettier -c *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "commit": "gitmoji --commit",
-    "build": "tsc"
+    "build": "tsc",
+    "publish": "pnpm changeset publish"
   },
   "keywords": [
     "gatsby",
