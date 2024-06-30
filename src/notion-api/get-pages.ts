@@ -12,13 +12,21 @@ import { getBlocks } from './get-blocks';
 const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item is NotionAPIPage =>
   item.object === 'page';
 
-async function fetchPageChildren(
-  page: NotionAPIPage,
-  token: string,
-  notionVersion: string,
-  reporter: Reporter,
-  cache: GatsbyCache,
-) {
+type FetchPageChildrenOption = {
+  page: NotionAPIPage;
+  token: string;
+  notionVersion: string;
+  reporter: Reporter;
+  cache: GatsbyCache;
+};
+
+async function fetchPageChildren({
+  page,
+  token,
+  notionVersion,
+  reporter,
+  cache,
+}: FetchPageChildrenOption) {
   let cacheKey = `notionApiPageChildren:${page.id}:${page.last_edited_time}`;
 
   let children: Block[] = await cache.get(cacheKey);
@@ -27,18 +35,26 @@ async function fetchPageChildren(
     return children;
   }
 
-  children = await getBlocks(page.id, token, notionVersion, reporter);
+  children = await getBlocks({ id: page.id, token, notionVersion, reporter });
   await cache.set(cacheKey, children);
   return children;
 }
 
-export const getPages = async (
-  token: string,
-  databaseId: string,
-  notionVersion: string,
-  reporter: Reporter,
-  cache: GatsbyCache,
-) => {
+type GetPageOptions = {
+  token: string;
+  databaseId: string;
+  notionVersion: string;
+  reporter: Reporter;
+  cache: GatsbyCache;
+};
+
+export const getPages = async ({
+  token,
+  databaseId,
+  notionVersion,
+  reporter,
+  cache,
+}: GetPageOptions) => {
   const notion = new Client({ auth: token, notionVersion });
   const pages: Page[] = [];
 
@@ -60,7 +76,13 @@ export const getPages = async (
           .map(
             async (result): Promise<Page> => ({
               ...result,
-              children: await fetchPageChildren(result, token, notionVersion, reporter, cache),
+              children: await fetchPageChildren({
+                page: result,
+                token,
+                notionVersion,
+                reporter,
+                cache,
+              }),
             }),
           ),
       );

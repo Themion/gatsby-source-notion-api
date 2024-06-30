@@ -4,12 +4,14 @@ import { errorMessage } from '../error-message';
 import { Block } from '../types';
 import { isFulfilled, isPropertyAccessible, isPropertySupported } from '../utils';
 
-export const getBlocks = async (
-  id: string,
-  notionVersion: string,
-  token: string,
-  reporter: Reporter,
-) => {
+type GetBlockOption = {
+  id: string;
+  notionVersion: string;
+  token: string;
+  reporter: Reporter;
+};
+
+export const getBlocks = async ({ id, token, notionVersion, reporter }: GetBlockOption) => {
   const notion = new Client({ auth: token, notionVersion });
   const blockContent: Block[] = [];
   let startCursor: string | null = null;

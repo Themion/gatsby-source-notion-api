@@ -25,7 +25,7 @@ export const sourceNodes: GatsbyNode['sourceNodes'] = async (
     lowerTitleLevel = true,
   }: Options,
 ) => {
-  const pages = await getPages(token, databaseId, notionVersion, reporter, cache);
+  const pages = await getPages({ token, databaseId, notionVersion, reporter, cache });
 
   pages.forEach((page) => {
     const title = getNotionPageTitle(page);
