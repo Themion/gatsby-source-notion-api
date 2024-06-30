@@ -53,7 +53,7 @@ export function isPageAccessible<
 
 export const getPropertyContent = (
   property: NotionAPIPropertyValueWithoutID<NotionAPIPropertyValue>,
-) => {
+): NormalizedNotionValue => {
   switch (property.type) {
     case 'unique_id':
       return property.unique_id.number;
@@ -64,9 +64,9 @@ export const getPropertyContent = (
     case 'number':
       return property.number;
     case 'select':
-      return property.select?.name ?? null;
+      return property.select;
     case 'multi_select':
-      return property.multi_select.map((value) => value.name);
+      return property.multi_select;
     case 'status':
       return property.status?.name ?? '';
     case 'date':

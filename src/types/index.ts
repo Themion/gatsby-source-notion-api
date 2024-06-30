@@ -1,4 +1,10 @@
-import type { NotionAPIBlock, NotionAPIDatabase, NotionAPIPage, NotionAPIUser } from './notion';
+import type {
+  NotionAPIBlock,
+  NotionAPIDatabase,
+  NotionAPIPage,
+  NotionAPIPropertyValue,
+  NotionAPIUser,
+} from './notion';
 
 /*
  * Helper
@@ -33,6 +39,15 @@ export type NotionPerson = {
   email: string | null;
 };
 
+type OptionColor = NonNullable<
+  Extract<NotionAPIPropertyValue, { type: 'select' }>['select']
+>['color'];
+
+export type NotionOption = {
+  name: string;
+  color: OptionColor;
+};
+
 export type NormalizedNotionValue =
   | null
   | boolean
@@ -42,6 +57,7 @@ export type NormalizedNotionValue =
   | NotionDate
   | NotionFile
   | NotionPerson
+  | NotionOption
   | NormalizedNotionValue[];
 
 /*
