@@ -1,7 +1,7 @@
 import { Client } from '@notionhq/client';
 import type { Reporter } from 'gatsby';
 import { errorMessage } from '../error-message';
-import { Block } from '../types';
+import { NotionBlock } from '../types';
 import { isFulfilled, isPropertyAccessible, isPropertySupported } from '../utils';
 
 type GetBlockOption = {
@@ -13,7 +13,7 @@ type GetBlockOption = {
 
 export const getBlocks = async ({ id, token, notionVersion, reporter }: GetBlockOption) => {
   const notion = new Client({ auth: token, notionVersion });
-  const blockContent: Block[] = [];
+  const blockContent: NotionBlock[] = [];
   let startCursor: string | null = null;
 
   const getBlock = async (id: string, cursor: string | null = null) => {
@@ -26,7 +26,7 @@ export const getBlocks = async ({ id, token, notionVersion, reporter }: GetBlock
 
     const blocks = await Promise.allSettled(
       results.map(
-        async (block): Promise<Block> => ({
+        async (block): Promise<NotionBlock> => ({
           ...block,
           ...(block.has_children
             ? { has_children: true, children: (await getBlock(block.id)).blocks }

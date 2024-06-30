@@ -1,5 +1,5 @@
-import type { Block } from '../types';
-export const getBlockProperty = (block: Block) => {
+import type { NotionBlock } from '../types';
+export const getBlockProperty = (block: NotionBlock) => {
   switch (block.type) {
     case 'audio':
       return block[block.type];

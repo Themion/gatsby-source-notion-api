@@ -1,6 +1,6 @@
 import { RichTextItemResponse } from '@notionhq/client/build/src/api-endpoints';
 import { blockToString } from '../block-to-string';
-import { Block, Page } from '../types';
+import { NotionBlock, NotionPage } from '../types';
 import { getBlockProperty } from '../utils';
 
 const EOL_MD = '\n';
@@ -20,8 +20,11 @@ function prependToLines(content: string, string: string, useSpaces = true) {
 }
 
 // Converts a notion block to a markdown string.
-export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: boolean): string => {
-  const children: Block[] =
+export const notionBlockToMarkdown = (
+  block: NotionBlock | NotionPage,
+  lowerTitleLevel: boolean,
+): string => {
+  const children: NotionBlock[] =
     block.object === 'page' || block.has_children === true ? block.children : [];
   // Get the child content of the block.
   let childMarkdown = children

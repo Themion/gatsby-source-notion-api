@@ -6,7 +6,7 @@ import {
 import type { GatsbyCache, Reporter } from 'gatsby';
 import { NotionAPIPage } from 'src/types/notion';
 import { errorMessage } from '../error-message';
-import { Block, Page } from '../types';
+import { NotionBlock, NotionPage } from '../types';
 import { isFulfilled, isPageAccessible } from '../utils';
 import { getBlocks } from './get-blocks';
 
@@ -30,7 +30,7 @@ async function fetchPageChildren({
 }: FetchPageChildrenOption) {
   let cacheKey = `notionApiPageChildren:${page.id}:${page.last_edited_time}`;
 
-  let children: Block[] = await cache.get(cacheKey);
+  let children: NotionBlock[] = await cache.get(cacheKey);
 
   if (children) {
     return children;
@@ -57,7 +57,7 @@ export const getPages = async ({
   cache,
 }: GetPageOptions) => {
   const notion = new Client({ auth: token, notionVersion });
-  const pages: Page[] = [];
+  const pages: NotionPage[] = [];
 
   let startCursor: string | null = null;
 
@@ -75,7 +75,7 @@ export const getPages = async ({
           .filter(isPageAccessible)
           .filter(isPageObject)
           .map(
-            async (result): Promise<Page> => ({
+            async (result): Promise<NotionPage> => ({
               ...result,
               children: await fetchPageChildren({
                 page: result,

@@ -16,46 +16,46 @@ export type EntityWithUserDetail<E extends NotionAPIBlock | NotionAPIDatabase | 
  * Property
  */
 
-export type Date = {
+export type NotionDate = {
   start: string;
   end: string | null;
   time_zone: string | null;
 };
 
-export type File = {
+export type NotionFile = {
   name: string | null;
   url: string;
 };
 
-export type Person = {
+export type NotionPerson = {
   name: string | null;
   avatar: string | null;
   email: string | null;
 };
 
-export type NormalizedValue =
+export type NormalizedNotionValue =
   | null
   | boolean
   | number
   | string
   | string[]
-  | Date
-  | File
-  | Person
-  | NormalizedValue[];
+  | NotionDate
+  | NotionFile
+  | NotionPerson
+  | NormalizedNotionValue[];
 
 /*
  * Block
  */
 
-export type Block = NotionAPIBlock &
-  ({ has_children: false } | { has_children: true; children: Block[] });
+export type NotionBlock = NotionAPIBlock &
+  ({ has_children: false } | { has_children: true; children: NotionBlock[] });
 
 /*
  * Page & Database
  */
 
-export type Metadata = {
+export type NotionMetadata = {
   url: string;
   createdByAvatar: string | null;
   createdByEmail: string | null;
@@ -70,15 +70,15 @@ export type Metadata = {
   iconImage: string | null;
 };
 
-export type Page = NotionAPIPage & {
-  children: Block[];
+export type NotionPage = NotionAPIPage & {
+  children: NotionBlock[];
 };
 
-export type Database = {
+export type NotionDatabase = {
   id: string;
   object: NotionAPIDatabase['object'];
   parent: NotionAPIDatabase['parent'];
   title: string;
-  metadata: Metadata;
-  pages: Page[];
+  metadata: NotionMetadata;
+  pages: NotionPage[];
 };

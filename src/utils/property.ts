@@ -6,7 +6,7 @@ import {
   NotionAPIUser,
 } from 'src/types/notion';
 import { blockToString } from '../block-to-string';
-import { NormalizedValue, Person } from '../types';
+import { NormalizedNotionValue, NotionPerson } from '../types';
 
 /**
  * indicates if a property is accessible
@@ -129,7 +129,7 @@ export function getPropertyContentFromFile(file: NotionAPIFile): string {
  */
 export function getPropertyContentFromFormula(
   formula: Extract<NotionAPIPropertyValue, { type: 'formula' }>['formula'],
-): NormalizedValue {
+): NormalizedNotionValue {
   switch (formula.type) {
     case 'string':
       return formula.string;
@@ -152,7 +152,7 @@ export function getPropertyContentFromFormula(
  */
 export function getPropertyContentFromRollup(
   rollup: Extract<NotionAPIPropertyValue, { type: 'rollup' }>['rollup'],
-): NormalizedValue {
+): NormalizedNotionValue {
   switch (rollup.type) {
     case 'number':
       return rollup.number;
@@ -173,7 +173,7 @@ export function getPropertyContentFromRollup(
  */
 export function getPropertyContentFromUser(
   user: NotionAPIUser | InaccessibleNotionAPIUser | null,
-): Person | null {
+): NotionPerson | null {
   if (!user || !isPropertyAccessible(user)) {
     return null;
   }
