@@ -31,6 +31,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.14.9",
+    "gatsby": "^5.13.6",
     "gitmoji-cli": "^4.1.0",
     "husky": "^6.0.0",
     "prettier": "^2.3.0",
