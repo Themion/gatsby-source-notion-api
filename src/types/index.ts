@@ -39,13 +39,13 @@ export type NotionPerson = {
   email: string | null;
 };
 
-type OptionColor = NonNullable<
+export type NotionOptionColor = NonNullable<
   Extract<NotionAPIPropertyValue, { type: 'select' }>['select']
 >['color'];
 
 export type NotionOption = {
   name: string;
-  color: OptionColor;
+  color: NotionOptionColor;
 };
 
 export type NormalizedNotionValue =
