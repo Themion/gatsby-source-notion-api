@@ -1,23 +1,11 @@
-import { blockToString } from '../block-to-string';
-import { Page } from '../types';
+import type { Page } from '../types';
+import { getPropertyContent } from '../utils';
 
 export const getNotionPageProperties = (page: Page) =>
-  Object.entries(page.properties).reduce((acc, [key, value]) => {
-    if (value.type == 'title') {
-      return acc;
-    }
-
-    if (value.type == 'rich_text') {
-      value.rich_text = blockToString(value.rich_text);
-    }
-
-    return {
+  Object.entries(page.properties).reduce(
+    (acc, [key, value]) => ({
       ...acc,
-      [key]: {
-        id: value.id,
-        key,
-        value: value[value.type],
-        type: value.type,
-      },
-    };
-  }, {});
+      [key]: getPropertyContent(value),
+    }),
+    {},
+  );
