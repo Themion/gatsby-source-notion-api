@@ -3,7 +3,7 @@ import {
   DatabaseObjectResponse,
   PageObjectResponse,
 } from '@notionhq/client/build/src/api-endpoints';
-import { GatsbyCache, Reporter } from 'gatsby';
+import type { GatsbyCache, Reporter } from 'gatsby';
 import { errorMessage } from '../error-message';
 import { Block, NotionAPIPage, Page } from '../types';
 import { isFulfilled, isPageAccessible } from '../utils';
@@ -13,7 +13,7 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
   item.object === 'page';
 
 async function fetchPageChildren(
-  page,
+  page: NotionAPIPage,
   token: string,
   notionVersion: string,
   reporter: Reporter,
@@ -32,7 +32,7 @@ async function fetchPageChildren(
   return children;
 }
 
-exports.getPages = async (
+export const getPages = async (
   token: string,
   databaseId: string,
   notionVersion: string,

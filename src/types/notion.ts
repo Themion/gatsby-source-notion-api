@@ -27,10 +27,9 @@ export type InaccessibleNotionAPIUser = Pick<NotionAPIUser, 'object' | 'id'>;
  * Block
  */
 
-export type NotionAPIBlock = Extract<
-  Awaited<ReturnType<Client['blocks']['retrieve']>>,
-  { type: string }
->;
+type _NotionAPIBlock = Extract<Awaited<ReturnType<Client['blocks']['retrieve']>>, { type: string }>;
+
+export type NotionAPIBlock = _NotionAPIBlock & { [key in _NotionAPIBlock['type']]?: any };
 
 export type InaccessibleNotionAPIBlock = Exclude<
   Awaited<ReturnType<Client['blocks']['retrieve']>>,

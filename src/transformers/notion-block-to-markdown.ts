@@ -1,11 +1,12 @@
 import { blockToString } from '../block-to-string';
+import { Block, Page } from '../types';
 
 const EOL_MD = '\n';
 const DOUBLE_EOL_MD = EOL_MD.repeat(2);
 
 // Inserts the string at the beginning of every line of the content. If the useSpaces flag is set to
 // true, the lines after the first will instead be prepended with two spaces.
-function prependToLines(content, string, useSpaces = true) {
+function prependToLines(content: string, string: string, useSpaces = true) {
   let [head, ...tail] = content.split('\n');
 
   return [
@@ -17,10 +18,12 @@ function prependToLines(content, string, useSpaces = true) {
 }
 
 // Converts a notion block to a markdown string.
-export const notionBlockToMarkdown = (block, lowerTitleLevel) => {
+export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: boolean): string => {
+  const children: Block[] =
+    block.object === 'page' || block.has_children === true ? block.children : [];
   // Get the child content of the block.
-  let childMarkdown = (block.children ?? [])
-    .map((block) => notionBlockToMarkdown(block, lowerTitleLevel))
+  let childMarkdown = children
+    .map((childBlock) => notionBlockToMarkdown(childBlock, lowerTitleLevel))
     .join('')
     .trim();
 
