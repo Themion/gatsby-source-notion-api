@@ -7,6 +7,10 @@
 /**
  * @type {import('gatsby').GatsbyConfig}
  */
+const dotenv = require("dotenv")
+
+dotenv.config()
+
 module.exports = {
   siteMetadata: {
     title: `Gatsby Default Starter`,
@@ -43,15 +47,8 @@ module.exports = {
     {
       resolve: `@themion/gatsby-source-notion-api`,
       options: {
-        token: "secret_Kfd4ZfFk7kjmy7xMb2GLKKWVGtkoQnNoyWlaxeQT40L",
-        databaseId: "59a089511d7048128c2b2882a7127434",
-      },
-    },
-    {
-      resolve: `@themion/gatsby-source-notion-api`,
-      options: {
-        token: "secret_Kfd4ZfFk7kjmy7xMb2GLKKWVGtkoQnNoyWlaxeQT40L",
-        databaseId: "10e318d19f28432abb8fd38e9397c06f",
+        token: process.env.NOTION_TOKEN,
+        databaseId: process.env.NOTION_DATABASE,
       },
     },
   ],

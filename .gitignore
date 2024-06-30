@@ -122,3 +122,5 @@ dist
 .pnp.*
 
 schema.json
+lib
+public

@@ -11,7 +11,7 @@
     "format": "prettier --write *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "lint": "prettier -c *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "commit": "gitmoji --commit",
-    "build": "echo \"No build script setup\""
+    "build": "tsc"
   },
   "keywords": [
     "gatsby",
@@ -30,9 +30,12 @@
     "yaml": "^1.10.2"
   },
   "devDependencies": {
+    "@types/node": "^20.14.9",
+    "gatsby": "^5.13.6",
     "gitmoji-cli": "^4.1.0",
     "husky": "^6.0.0",
-    "prettier": "^2.3.0"
+    "prettier": "^2.3.0",
+    "typescript": "^5.5.2"
   },
   "husky": {
     "hooks": {

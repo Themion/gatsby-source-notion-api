@@ -1,0 +1,73 @@
+import type { Block } from '../types';
+export const getBlockProperty = (block: Block) => {
+  switch (block.type) {
+    case 'audio':
+      return block[block.type];
+    case 'bookmark':
+      return block[block.type];
+    case 'breadcrumb':
+      return block[block.type];
+    case 'bulleted_list_item':
+      return block[block.type];
+    case 'callout':
+      return block[block.type];
+    case 'child_database':
+      return block[block.type];
+    case 'child_page':
+      return block[block.type];
+    case 'code':
+      return block[block.type];
+    case 'column':
+      return block[block.type];
+    case 'column_list':
+      return block[block.type];
+    case 'divider':
+      return block[block.type];
+    case 'embed':
+      return block[block.type];
+    case 'equation':
+      return block[block.type];
+    case 'file':
+      return block[block.type];
+    case 'heading_1':
+      return block[block.type];
+    case 'heading_2':
+      return block[block.type];
+    case 'heading_3':
+      return block[block.type];
+    case 'image':
+      return block[block.type];
+    case 'link_preview':
+      return block[block.type];
+    case 'link_to_page':
+      return block[block.type];
+    case 'numbered_list_item':
+      return block[block.type];
+    case 'paragraph':
+      return block[block.type];
+    case 'pdf':
+      return block[block.type];
+    case 'quote':
+      return block[block.type];
+    case 'synced_block':
+      return block[block.type];
+    case 'table':
+      return block[block.type];
+    case 'table_of_contents':
+      return block[block.type];
+    case 'table_row':
+      return block[block.type];
+    case 'template':
+      return block[block.type];
+    case 'to_do':
+      return block[block.type];
+    case 'toggle':
+      return block[block.type];
+    case 'unsupported':
+      return block[block.type];
+    case 'video':
+      return block[block.type];
+    default:
+      return null;
+  }
+};
