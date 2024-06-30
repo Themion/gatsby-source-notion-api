@@ -1,12 +1,21 @@
-const { getPages } = require('./src/notion-api/get-pages');
-const { notionBlockToMarkdown } = require('./src/transformers/notion-block-to-markdown');
-const { getNotionPageProperties } = require('./src/transformers/get-page-properties');
-const { getNotionPageTitle } = require('./src/transformers/get-page-title');
-const YAML = require('yaml');
+import { GatsbyNode, PluginOptions } from 'gatsby';
+import YAML from 'yaml';
+import { getPages } from './notion-api/get-pages';
+import { getNotionPageProperties } from './transformers/get-page-properties';
+import { getNotionPageTitle } from './transformers/get-page-title';
+import { notionBlockToMarkdown } from './transformers/notion-block-to-markdown';
+
+type Options = PluginOptions & {
+  token: string;
+  databaseId: string;
+  notionVersion: string;
+  propsToFrontmatter: boolean;
+  lowerTitleLevel: boolean;
+};
 
 const NOTION_NODE_TYPE = 'Notion';
 
-exports.sourceNodes = async (
+export const sourceNodes: GatsbyNode['sourceNodes'] = async (
   { actions, createContentDigest, createNodeId, reporter, cache },
   {
     token,
@@ -14,9 +23,9 @@ exports.sourceNodes = async (
     notionVersion = '2022-06-28',
     propsToFrontmatter = true,
     lowerTitleLevel = true,
-  },
+  }: Options,
 ) => {
-  const pages = await getPages({ token, databaseId, notionVersion }, reporter, cache);
+  const pages = await getPages(token, databaseId, notionVersion, reporter, cache);
 
   pages.forEach((page) => {
     const title = getNotionPageTitle(page);
