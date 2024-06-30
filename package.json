@@ -25,6 +25,7 @@
     "url": "git+ssh://git@github.com/Themion/gatsby-source-notion-api.git"
   },
   "dependencies": {
+    "@changesets/cli": "^2.27.6",
     "@notionhq/client": "^2.2.15",
     "or-pipets": "^1.0.1",
     "yaml": "^1.10.2"
