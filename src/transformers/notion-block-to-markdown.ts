@@ -1,7 +1,7 @@
 import { RichTextItemResponse } from '@notionhq/client/build/src/api-endpoints';
-import { getBlockProperty } from 'src/utils';
 import { blockToString } from '../block-to-string';
 import { Block, Page } from '../types';
+import { getBlockProperty } from '../utils';
 
 const EOL_MD = '\n';
 const DOUBLE_EOL_MD = EOL_MD.repeat(2);
