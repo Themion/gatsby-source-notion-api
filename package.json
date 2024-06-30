@@ -2,6 +2,9 @@
   "name": "@themion/gatsby-source-notion-api",
   "version": "0.0.0",
   "description": "Gatsby source plugin for official Notion.so API",
+  "exports": {
+    "types": "./lib/types/index.d.ts"
+  },
   "scripts": {
     "format": "prettier --write *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "lint": "prettier -c *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
