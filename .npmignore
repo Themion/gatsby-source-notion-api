@@ -1,20 +1,23 @@
-.idea
-.github
+# basics
 node_modules
-test
-images
-.eslinrc.js
-jest.config.js
-tsconfig.json
-yarn.lock
-coverage
-.nyc_output
-.gitignore
-tsconfig.tsbuildinfo
-changelog.md
-.commitlintrc
-docs
-images
-readme.md
-schema.json
+public
 src
+pnpm-lock.yaml
+README.md
+
+# dev
+.idea
+.cache
+.github
+e2e
+
+# config
+.prettierrc
+tsconfig.json
+
+# ignores
+.gitignore
+.npmignore
+
+# publish
+.changeset
