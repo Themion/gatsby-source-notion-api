@@ -1,13 +1,12 @@
-import { blockToString } from '../block-to-string';
 import {
   InaccessibleNotionAPIUser,
-  NormalizedValue,
   NotionAPIFile,
   NotionAPIPropertyValue,
   NotionAPIPropertyValueWithoutID,
   NotionAPIUser,
-  Person,
-} from '../types';
+} from 'src/types/notion';
+import { blockToString } from '../block-to-string';
+import { NormalizedNotionValue, NotionPerson } from '../types';
 
 /**
  * indicates if a property is accessible
@@ -54,7 +53,7 @@ export function isPageAccessible<
 
 export const getPropertyContent = (
   property: NotionAPIPropertyValueWithoutID<NotionAPIPropertyValue>,
-) => {
+): NormalizedNotionValue => {
   switch (property.type) {
     case 'unique_id':
       return property.unique_id.number;
@@ -65,9 +64,9 @@ export const getPropertyContent = (
     case 'number':
       return property.number;
     case 'select':
-      return property.select?.name ?? null;
+      return property.select;
     case 'multi_select':
-      return property.multi_select.map((value) => value.name);
+      return property.multi_select;
     case 'status':
       return property.status?.name ?? '';
     case 'date':
@@ -130,7 +129,7 @@ export function getPropertyContentFromFile(file: NotionAPIFile): string {
  */
 export function getPropertyContentFromFormula(
   formula: Extract<NotionAPIPropertyValue, { type: 'formula' }>['formula'],
-): NormalizedValue {
+): NormalizedNotionValue {
   switch (formula.type) {
     case 'string':
       return formula.string;
@@ -153,7 +152,7 @@ export function getPropertyContentFromFormula(
  */
 export function getPropertyContentFromRollup(
   rollup: Extract<NotionAPIPropertyValue, { type: 'rollup' }>['rollup'],
-): NormalizedValue {
+): NormalizedNotionValue {
   switch (rollup.type) {
     case 'number':
       return rollup.number;
@@ -174,7 +173,7 @@ export function getPropertyContentFromRollup(
  */
 export function getPropertyContentFromUser(
   user: NotionAPIUser | InaccessibleNotionAPIUser | null,
-): Person | null {
+): NotionPerson | null {
   if (!user || !isPropertyAccessible(user)) {
     return null;
   }
