@@ -1,3 +1,5 @@
+import { RichTextItemResponse } from '@notionhq/client/build/src/api-endpoints';
+import { getBlockProperty } from 'src/utils';
 import { blockToString } from '../block-to-string';
 import { Block, Page } from '../types';
 
@@ -33,9 +35,13 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
   }
 
   // Extract the remaining content of the block and combine it with its children.
-  let blockMarkdown = block[block.type]?.text
-    ? blockToString(block[block.type]?.text).trim()
-    : null;
+  const property = getBlockProperty(block);
+  const textPropertyEntries = Object.entries({ ...property }).find(([key]) => key === 'text');
+  const textProperty: RichTextItemResponse[] = // TODO: might cause problem
+    textPropertyEntries !== undefined && Array.isArray(textPropertyEntries[1])
+      ? textPropertyEntries[1]
+      : [];
+  let blockMarkdown = blockToString(textProperty).trim();
   let markdown = [blockMarkdown, childMarkdown].filter((text) => text).join(DOUBLE_EOL_MD);
 
   // Paragraph
