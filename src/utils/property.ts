@@ -103,7 +103,7 @@ export const getPropertyContent = (
     case 'last_edited_time':
       return property.last_edited_time;
     default:
-      console.warn(`Unknown Property: ${property.type}`);
+      console.warn(`Property type '${property.type}' is not supported yet.`);
       return null;
   }
 };
