@@ -7,7 +7,8 @@
     "lint": "prettier -c *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "commit": "gitmoji --commit",
     "build": "tsc",
-    "publish": "pnpm changeset publish"
+    "publish": "pnpm changeset publish",
+    "release": "pnpm run build && pnpm run publish"
   },
   "keywords": [
     "gatsby",
@@ -23,13 +24,11 @@
   "dependencies": {
     "@changesets/cli": "^2.27.6",
     "@notionhq/client": "^2.2.15",
-    "or-pipets": "^1.0.1",
     "yaml": "^1.10.2"
   },
   "devDependencies": {
     "@types/node": "^20.14.9",
     "gatsby": "^5.13.6",
-    "gitmoji-cli": "^4.1.0",
     "husky": "^6.0.0",
     "prettier": "^2.3.0",
     "typescript": "^5.5.2"
