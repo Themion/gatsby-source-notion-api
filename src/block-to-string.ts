@@ -76,7 +76,7 @@ export const blockToString = (textBlocks: RichTextItemResponse[]) =>
       ...textBlock.annotations,
       equation: textBlock.type === 'equation',
       link: textBlock.type === 'text' ? textBlock.text.link : null,
-      content: '',
+      content: textBlock.plain_text,
     };
 
     if (textBlock.type == 'equation') {
