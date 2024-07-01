@@ -1,6 +1,6 @@
 {
   "name": "@themion/gatsby-source-notion-api",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "Gatsby source plugin for official Notion.so API",
   "scripts": {
     "lint": "prettier -c *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",

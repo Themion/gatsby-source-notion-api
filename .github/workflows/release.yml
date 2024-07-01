@@ -15,7 +15,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
 
-      - name: Set PNPM
+      - name: Use pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 9
@@ -32,8 +32,10 @@ jobs:
         id: vars
         run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
 
-      - name: Deploy to NPM
-        env:
-          RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+      - name: Set version to package.json
+        run: pnpm version ${{ steps.vars.outputs.tag }} --no-git-tag
+
+      - name: Build and Deploy
         run: |
-          pnpm $RELEASE_VERSION
+          pnpm run build
+          pnpm publish --tag ${{ steps.vars.outputs.tag }}
