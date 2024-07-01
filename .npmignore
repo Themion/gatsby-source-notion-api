@@ -18,6 +18,3 @@ tsconfig.json
 # ignores
 .gitignore
 .npmignore
-
-# publish
-.changeset
