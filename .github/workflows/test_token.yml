@@ -7,9 +7,12 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
   release:
-    name: Release
+    name: Test
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
       - name: check if token exists
         run: echo ${{ secrets.GITHUB_TOKEN }} >> token.txt
 
