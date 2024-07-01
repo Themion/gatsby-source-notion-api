@@ -7,7 +7,8 @@
     "lint": "prettier -c *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "commit": "gitmoji --commit",
     "build": "tsc",
-    "publish": "pnpm changeset publish"
+    "publish": "pnpm changeset publish",
+    "release": "pnpm run build && pnpm run publish"
   },
   "keywords": [
     "gatsby",
