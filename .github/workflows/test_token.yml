@@ -1,0 +1,22 @@
+name: Test with Token
+
+on:
+  workflow_dispatch:
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: check if token exists
+        run: echo ${{ secrets.GITHUB_TOKEN }} >> token.txt
+
+      - name: login to github
+        run: |
+          gh auth login --with-token < token.txt
+          gh auth setup-git
+
+      - name: check if can set version
+        run: npm version v0.0.1
