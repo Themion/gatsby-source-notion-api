@@ -34,8 +34,7 @@ jobs:
 
       - name: Set version to package.json
         run: |
-          pnpm version ${{ steps.vars.outputs.tag }} --no-git-tag
-          git add . && git commit -m "Bump version to ${{ steps.vars.outputs.tag }}"
+          pnpm version ${{ steps.vars.outputs.tag }}
 
       - name: Build and Deploy
         run: |
