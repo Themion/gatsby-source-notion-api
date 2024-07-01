@@ -3,12 +3,10 @@
   "version": "0.0.0",
   "description": "Gatsby source plugin for official Notion.so API",
   "scripts": {
-    "format": "prettier --write *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "lint": "prettier -c *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
-    "commit": "gitmoji --commit",
     "build": "tsc",
     "publish": "pnpm changeset publish",
-    "release": "pnpm run build && pnpm run publish"
+    "release": "pnpm run build && pnpm publish"
   },
   "keywords": [
     "gatsby",
@@ -22,11 +20,11 @@
     "url": "git+ssh://git@github.com/Themion/gatsby-source-notion-api.git"
   },
   "dependencies": {
-    "@changesets/cli": "^2.27.6",
     "@notionhq/client": "^2.2.15",
     "yaml": "^1.10.2"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.7",
     "@types/node": "^20.14.9",
     "gatsby": "^5.13.6",
     "husky": "^6.0.0",
