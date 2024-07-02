@@ -49,6 +49,11 @@ module.exports = {
       options: {
         token: process.env.NOTION_TOKEN,
         databaseId: process.env.NOTION_DATABASE,
+        converter: (data) => Object.entries(data).reduce((acc, [key, value]) => {
+          return {
+          ...acc,
+          [key]: (key === 'date' && value !== null) ? value.start : value}
+      }, {})
       },
     },
   ],
