@@ -65,11 +65,11 @@ export const getPropertyContent = (
     case 'number':
       return property.number;
     case 'select':
-      return property.select?.name ?? null;
+      return property.select;
     case 'multi_select':
-      return property.multi_select.map((value) => value.name);
+      return property.multi_select;
     case 'status':
-      return property.status?.name ?? '';
+      return property.status;
     case 'date':
       return property.date;
     case 'people':
