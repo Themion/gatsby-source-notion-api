@@ -1,7 +1,7 @@
-import type { Page } from '../types';
+import type { NormalizedValue, Page } from '../types';
 import { getPropertyContent } from '../utils';
 
-export const getNotionPageProperties = (page: Page) =>
+export const getNotionPageProperties = (page: Page): Record<string, NormalizedValue> =>
   Object.entries(page.properties).reduce(
     (acc, [key, value]) => ({
       ...acc,

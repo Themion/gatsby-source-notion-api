@@ -54,7 +54,7 @@ export function isPageAccessible<
 
 export const getPropertyContent = (
   property: NotionAPIPropertyValueWithoutID<NotionAPIPropertyValue>,
-) => {
+): NormalizedValue => {
   switch (property.type) {
     case 'unique_id':
       return property.unique_id.number;
