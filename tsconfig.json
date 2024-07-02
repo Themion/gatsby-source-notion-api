@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "allowJs": false,
     "allowSyntheticDefaultImports": true,
     "baseUrl": "./",
     "declaration": true,
@@ -14,7 +15,7 @@
     "noImplicitReturns": true,
     "outDir": "./lib",
     "removeComments": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "strict": true,
     "skipLibCheck": true,
     "target": "ES2015"
