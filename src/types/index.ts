@@ -100,3 +100,11 @@ export type Database = {
   metadata: Metadata;
   pages: Page[];
 };
+
+export type Converter = (
+  argument: {
+    name: string;
+    value: NormalizedValue;
+    properties: Page['properties'];
+  } & Page['properties']['string'],
+) => NormalizedValue;
