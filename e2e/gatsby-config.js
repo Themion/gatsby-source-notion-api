@@ -49,6 +49,19 @@ module.exports = {
       options: {
         token: process.env.NOTION_TOKEN,
         databaseId: process.env.NOTION_DATABASE,
+        converter: ({ type, value }) => {
+          if (value === null) return value
+          switch (type) {
+            case "date":
+              return value.start
+            case "select":
+            case "status":
+            case "multi_select":
+              return value.name
+            default:
+              return value
+          }
+        },
       },
     },
   ],

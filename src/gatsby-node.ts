@@ -1,9 +1,10 @@
 import { GatsbyNode, PluginOptions } from 'gatsby';
 import YAML from 'yaml';
 import { getPages } from './notion-api/get-pages';
-import { getNotionPageProperties } from './transformers/get-page-properties';
+import { pageToProperties } from './transformers/get-page-properties';
 import { getNotionPageTitle } from './transformers/get-page-title';
 import { notionBlockToMarkdown } from './transformers/notion-block-to-markdown';
+import { Converter } from './types';
 
 type Options = PluginOptions & {
   token: string;
@@ -11,6 +12,7 @@ type Options = PluginOptions & {
   notionVersion: string;
   propsToFrontmatter: boolean;
   lowerTitleLevel: boolean;
+  converter: Converter;
 };
 
 const NOTION_NODE_TYPE = 'Notion';
@@ -23,13 +25,15 @@ export const sourceNodes: GatsbyNode['sourceNodes'] = async (
     notionVersion = '2022-06-28',
     propsToFrontmatter = true,
     lowerTitleLevel = true,
+    converter = ({ value }) => value,
   }: Options,
 ) => {
+  const getPageProperties = pageToProperties(converter);
   const pages = await getPages({ token, databaseId, notionVersion, reporter, cache });
 
   pages.forEach((page) => {
     const title = getNotionPageTitle(page);
-    const properties = getNotionPageProperties(page);
+    const properties = getPageProperties(page);
     let markdown = notionBlockToMarkdown(page, lowerTitleLevel);
 
     if (propsToFrontmatter) {

@@ -1,11 +1,13 @@
-import type { Page } from '../types';
+import type { Converter, NormalizedValue, Page } from '../types';
 import { getPropertyContent } from '../utils';
 
-export const getNotionPageProperties = (page: Page) =>
-  Object.entries(page.properties).reduce(
-    (acc, [key, value]) => ({
-      ...acc,
-      [key]: getPropertyContent(value),
-    }),
-    {},
-  );
+export const pageToProperties =
+  (converter: Converter) =>
+  ({ properties }: Page): Record<string, NormalizedValue> =>
+    Object.entries(properties).reduce((acc, [name, property]) => {
+      const value = getPropertyContent(property);
+      return {
+        ...acc,
+        [name]: converter({ ...property, name, value, properties }),
+      };
+    }, {});

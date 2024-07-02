@@ -70,7 +70,7 @@ const stylize = pipe(
   annotateLink,
 );
 
-export const blockToString = (textBlocks: RichTextItemResponse[]) =>
+export const blockToString = (textBlocks: RichTextItemResponse[]): string =>
   textBlocks.reduce((text, textBlock) => {
     const data: TextInfo = {
       ...textBlock.annotations,
