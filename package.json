@@ -1,6 +1,6 @@
 {
   "name": "@themion/gatsby-source-notion-api",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Gatsby source plugin for official Notion.so API",
   "scripts": {
     "format": "prettier --write *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
@@ -9,7 +9,7 @@
     "build": "tsc",
     "publish": "rm -rf ./lib && pnpm run build && npm publish --access=public"
   },
-  "types": "./lib/types/index.d.ts",
+  "types": "./lib/index.d.ts",
   "keywords": [
     "gatsby",
     "gatsby-plugin",

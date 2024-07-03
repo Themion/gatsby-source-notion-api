@@ -101,10 +101,11 @@ export type Database = {
   pages: Page[];
 };
 
-export type Converter = (
-  argument: {
-    name: string;
-    value: NormalizedValue;
-    properties: Page['properties'];
-  } & Page['properties']['string'],
-) => NormalizedValue;
+type ConverterArgument = {
+  name: string;
+  value: NormalizedValue;
+  properties: Page['properties'];
+} & Page['properties']['string'];
+
+export type KeyConverter = (argument: ConverterArgument) => string | null;
+export type ValueConverter = (argument: ConverterArgument) => NormalizedValue;
