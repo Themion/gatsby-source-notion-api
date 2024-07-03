@@ -50,7 +50,7 @@ module.exports = {
         token: process.env.NOTION_TOKEN,
         databaseId: process.env.NOTION_DATABASE,
         keyConverter: ({ type, name }) => {
-          if (type === "person") return "person"
+          if (type === "people") return "person"
           return name
         },
         valueConverter: ({ type, value }) => {
