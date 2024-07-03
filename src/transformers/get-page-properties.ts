@@ -1,8 +1,8 @@
-import type { Converter, NormalizedValue, Page } from '../types';
+import type { NormalizedValue, Page, ValueConverter } from '../types';
 import { getPropertyContent } from '../utils';
 
 export const pageToProperties =
-  (converter: Converter) =>
+  (converter: ValueConverter) =>
   ({ properties }: Page): Record<string, NormalizedValue> =>
     Object.entries(properties).reduce((acc, [name, property]) => {
       const value = getPropertyContent(property);
