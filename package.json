@@ -9,6 +9,7 @@
     "build": "tsc",
     "publish": "pnpm changeset publish"
   },
+  "types": "./lib/types/index.d.ts",
   "keywords": [
     "gatsby",
     "gatsby-plugin",
