@@ -7,7 +7,7 @@
     "lint": "prettier -c *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "commit": "gitmoji --commit",
     "build": "tsc",
-    "publish": "pnpm changeset publish"
+    "publish": "rm -rf ./lib && pnpm run build && npm publish --access=public"
   },
   "types": "./lib/types/index.d.ts",
   "keywords": [
