@@ -49,7 +49,11 @@ module.exports = {
       options: {
         token: process.env.NOTION_TOKEN,
         databaseId: process.env.NOTION_DATABASE,
-        converter: ({ type, value }) => {
+        keyConverter: ({ type }) => {
+          if (type === "person") return "person"
+          return name
+        },
+        valueConverter: ({ type, value }) => {
           if (value === null) return value
           switch (type) {
             case "date":
