@@ -1,6 +1,6 @@
 {
   "name": "@themion/gatsby-source-notion-api",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Gatsby source plugin for official Notion.so API",
   "scripts": {
     "format": "prettier --write *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
@@ -23,13 +23,11 @@
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
-    "or-pipets": "^1.0.1",
     "yaml": "^1.10.2"
   },
   "devDependencies": {
     "@types/node": "^20.14.9",
     "gatsby": "^5.13.6",
-    "gitmoji-cli": "^4.1.0",
     "husky": "^6.0.0",
     "prettier": "^2.3.0",
     "typescript": "^5.5.2"
