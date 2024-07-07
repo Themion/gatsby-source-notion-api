@@ -4,15 +4,29 @@
  * See: https://www.gatsbyjs.com/docs/reference/config-files/gatsby-node/
  */
 
+const { resolve } = require("node:path")
+
 /**
  * @type {import('gatsby').GatsbyNode['createPages']}
  */
-exports.createPages = async ({ actions }) => {
+exports.createPages = async ({ actions, graphql }) => {
   const { createPage } = actions
-  createPage({
-    path: "/using-dsg",
-    component: require.resolve("./src/templates/using-dsg.js"),
-    context: {},
-    defer: true,
+
+  const list = await graphql(`
+    query GatsbyNode {
+      allMarkdownRemark {
+        nodes {
+          id
+        }
+      }
+    }
+  `)
+
+  list.data.allMarkdownRemark.nodes.forEach(({ id }) => {
+    createPage({
+      path: `/${id}`,
+      component: resolve("./src/pages/detail.js"),
+      context: { id },
+    })
   })
 }
