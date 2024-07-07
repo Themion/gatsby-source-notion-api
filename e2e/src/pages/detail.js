@@ -1,11 +1,11 @@
+import { graphql } from "gatsby"
 import React from "react"
 
-import { graphql } from "gatsby"
+import "./detail.css"
 
-const DetailPage = ({ data }) => {
-  console.log(data.markdownRemark)
-  return <div dangerouslySetInnerHTML={{ __html: data.markdownRemark.html }} />
-}
+const DetailPage = ({ data }) => (
+  <div dangerouslySetInnerHTML={{ __html: data.markdownRemark.html }} />
+)
 
 export const query = graphql`
   query IndexPage($id: String) {
