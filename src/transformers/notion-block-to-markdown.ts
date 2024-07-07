@@ -6,7 +6,7 @@ import { getBlockProperty } from '../utils';
 const EOL_MD = '\n';
 const DOUBLE_EOL_MD = EOL_MD.repeat(2);
 
-const unsupportedNotionBlockComment = (block: Block) => 
+const unsupportedNotionBlockComment = (block: Block) =>
   `Block type '${block.type}' is not supported yet.`;
 
 // Inserts the string at the beginning of every line of the content. If the useSpaces flag is set to
@@ -95,13 +95,10 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
         '',
       );
     case 'video':
-      const url = block.video.type === 'external' 
-        ? block.video.external.url
-        : block.video.file.url
+      const url = block.video.type === 'external' ? block.video.external.url : block.video.file.url;
       if (block.video.type === 'external') {
-        const videoWarningText = 
-          `External video (${url}) is not supported yet: please upload video file directly.`
-        console.warn(videoWarningText)
+        const videoWarningText = `External video (${url}) is not supported yet: please upload video file directly.`;
+        console.warn(videoWarningText);
         return unsupportedNotionBlockComment(block);
       }
       const videoCaption = blockToString(block.video.caption).trim();
@@ -121,17 +118,21 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
     case 'divider':
       return `${EOL_MD}---${EOL_MD}`;
     case 'column_list':
-      return [EOL_MD, '<ColumnList>', EOL_MD, markdown, EOL_MD, '</ColumnList>', EOL_MD].join('');
+      return [
+        EOL_MD,
+        '<div class="notion-column-list-block">',
+        EOL_MD,
+        markdown,
+        EOL_MD,
+        '</div>',
+        EOL_MD,
+      ].join('');
     case 'column':
-      return ['<Column>', EOL_MD, EOL_MD, markdown, EOL_MD, EOL_MD, '</Column>', EOL_MD].join('');
+      return [EOL_MD, '<div class="notion-column-block">', markdown, '</div>', EOL_MD].join('');
     // TODO: Add support for table, callouts, and files
     default:
       const unsupportedWarningText = unsupportedNotionBlockComment(block);
-      console.warn(unsupportedWarningText)
-      return [
-        EOL_MD,
-        `<!-- ${unsupportedWarningText} -->`,
-        EOL_MD,
-      ].join();
+      console.warn(unsupportedWarningText);
+      return [EOL_MD, `<!-- ${unsupportedWarningText} -->`, EOL_MD].join();
   }
 };
