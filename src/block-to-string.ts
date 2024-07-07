@@ -23,7 +23,9 @@ const ifTrue = (predicate: Func<boolean>, transformer: Func) => (data: TextInfo)
 
 const annotateEquation = ifTrue(pick('equation'), ({ content, ...data }) => ({
   ...data,
-  content: `$${content}$`,
+  content: `![${content}](http://www.sciweavers.org/tex2img.php?eq=${encodeURIComponent(
+    content,
+  )}&bc=White&fc=Black&im=jpg&fs=20&ff=arev&edit=)`,
 }));
 const annotateCode = ifTrue(pick('code'), ({ content, ...data }) => ({
   ...data,
