@@ -109,3 +109,7 @@ type ConverterArgument = {
 
 export type KeyConverter = (argument: ConverterArgument) => string | null;
 export type ValueConverter = (argument: ConverterArgument) => NormalizedValue;
+export type Slugifier = (properties: Record<string, NormalizedValue>) => {
+  key: string;
+  value: string;
+};

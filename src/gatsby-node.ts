@@ -1,10 +1,12 @@
 import { GatsbyNode, PluginOptions } from 'gatsby';
 import YAML from 'yaml';
 import { getPages } from './notion-api/get-pages';
+import { updatePage } from './notion-api/update-page';
 import { pageToProperties } from './transformers/get-page-properties';
 import { getNotionPageTitle } from './transformers/get-page-title';
 import { notionBlockToMarkdown } from './transformers/notion-block-to-markdown';
-import { KeyConverter, ValueConverter } from './types';
+import { KeyConverter, NormalizedValue, Slugifier, ValueConverter } from './types';
+import { getPropertyContent } from './utils';
 
 type Options = PluginOptions & {
   token: string;
@@ -14,6 +16,7 @@ type Options = PluginOptions & {
   lowerTitleLevel: boolean;
   keyConverter: KeyConverter;
   valueConverter: ValueConverter;
+  slugifier?: Slugifier;
 };
 
 const NOTION_NODE_TYPE = 'Notion';
@@ -28,15 +31,27 @@ export const sourceNodes: GatsbyNode['sourceNodes'] = async (
     lowerTitleLevel = true,
     keyConverter = ({ name }) => name.replaceAll(' ', '_'),
     valueConverter = ({ value }) => value,
+    slugifier,
   }: Options,
 ) => {
   const getPageProperties = pageToProperties(valueConverter, keyConverter);
   const pages = await getPages({ token, databaseId, notionVersion, reporter, cache });
 
-  pages.forEach((page) => {
+  const appendSlug = async (pageId: string, properties: Record<string, NormalizedValue>) => {
+    if (!slugifier) return;
+    const { key, value } = slugifier(properties);
+    if (!!properties[key]) return;
+    const slug = await updatePage({ token, notionVersion, pageId, key, value });
+    if (slug === null) return;
+    properties[key] = getPropertyContent(slug);
+  };
+
+  pages.forEach(async (page) => {
     const title = getNotionPageTitle(page);
     const properties = getPageProperties(page);
     let markdown = notionBlockToMarkdown(page, lowerTitleLevel);
+
+    await appendSlug(page.id, properties);
 
     if (propsToFrontmatter) {
       markdown = '---\n'.concat(YAML.stringify(properties)).concat('\n---\n\n').concat(markdown);
