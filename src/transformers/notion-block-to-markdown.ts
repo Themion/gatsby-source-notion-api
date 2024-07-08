@@ -50,21 +50,48 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
   let markdown = [blockMarkdown, childMarkdown].filter((text) => text).join(DOUBLE_EOL_MD);
 
   switch (block.type) {
-    case 'paragraph':
-      return [EOL_MD, markdown, EOL_MD].join('');
+    case 'audio':
+      const audioUrl =
+        block.audio.type == 'external' ? block.audio.external.url : block.audio.file.url;
+      return `<audio controls><source src="${audioUrl}" /></audio>\n`;
+    case 'bookmark':
+      const bookmarkUrl = block.bookmark.url;
+      const bookmarkCaption = blockToString(block.bookmark.caption) || bookmarkUrl;
+      return `[${bookmarkCaption}](${bookmarkUrl})`;
+    case 'bulleted_list_item':
+      return prependToLines(markdown.replaceAll('\n', '<br>'), '*');
+    case 'child_page':
+      if (block.has_children) return childPageToHtml(block);
+      return '';
+    case 'code':
+      `\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\`${childMarkdown}`;
+    case 'column':
+      return [EOL_MD, '<div class="notion-column-block">', markdown, '</div>', EOL_MD].join('');
+    case 'column_list':
+      return `<div class="notion-column-list-block">${markdown}</div>\n`;
+    case 'divider':
+      return '---';
+    case 'embed':
+      return [EOL_MD, block.embed.url, EOL_MD].join('');
     case 'heading_1':
     case 'heading_2':
     case 'heading_3':
       const headingLevel = Number(block.type.split('_')[1]);
       const headingSymbol = (lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
       return [EOL_MD, prependToLines(markdown, headingSymbol), EOL_MD].join('');
+    case 'image':
+      const imageUrl =
+        block.image.type == 'external' ? block.image.external.url : block.image.file.url;
+      return `${EOL_MD}![${blockToString(block.image.caption)}](${imageUrl})${EOL_MD}`;
+    case 'numbered_list_item':
+      return `\n${prependToLines(markdown.replaceAll('\n', '<br>'), '1.')}\n`;
+    case 'paragraph':
+      return [EOL_MD, markdown, EOL_MD].join('');
+    case 'quote':
+      return [EOL_MD, prependToLines(markdown, '>', false), EOL_MD].join('');
     case 'to_do':
       const toDoSymbol = `- [${block.to_do.checked ? 'x' : ' '}] `;
       return prependToLines(markdown, toDoSymbol).concat(EOL_MD);
-    case 'bulleted_list_item':
-      return `\n${prependToLines(markdown.replaceAll('\n', '<br>'), '*')}\n`;
-    case 'numbered_list_item':
-      return `\n${prependToLines(markdown.replaceAll('\n', '<br>'), '1.')}\n`;
     case 'toggle':
       return [
         EOL_MD,
@@ -75,27 +102,6 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
         '</details>',
         EOL_MD,
       ].join('');
-    case 'code':
-      return [
-        EOL_MD,
-        `\`\`\` ${block.code.language}${EOL_MD}`,
-        blockMarkdown,
-        EOL_MD,
-        '```',
-        EOL_MD,
-        childMarkdown,
-        EOL_MD,
-      ].join('');
-    case 'image':
-      const imageUrl =
-        block.image.type == 'external' ? block.image.external.url : block.image.file.url;
-      return `${EOL_MD}![${blockToString(block.image.caption)}](${imageUrl})${EOL_MD}`;
-    case 'audio':
-      const audioUrl =
-        block.audio.type == 'external' ? block.audio.external.url : block.audio.file.url;
-      return [EOL_MD, '<audio controls>', `<source src="${audioUrl}" />`, '</audio>', EOL_MD].join(
-        '',
-      );
     case 'video':
       const url = block.video.type === 'external' ? block.video.external.url : block.video.file.url;
       const videoCaption = blockToString(block.video.caption).trim();
@@ -108,31 +114,8 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
       const videoWarningText = `External video (${url}) is not supported yet: please upload video file directly or to youtube.`;
       console.warn(videoWarningText);
       return [EOL_MD, `<!-- ${videoWarningText} -->`, EOL_MD].join('');
-    case 'embed':
-      return [EOL_MD, block.embed.url, EOL_MD].join('');
-    case 'quote':
-      return [EOL_MD, prependToLines(markdown, '>', false), EOL_MD].join('');
-    case 'bookmark':
-      const bookmarkUrl = block.bookmark.url;
-      const bookmarkCaption = blockToString(block.bookmark.caption) || bookmarkUrl;
-      return `${EOL_MD}[${bookmarkCaption}](${bookmarkUrl})${EOL_MD}`;
-    case 'divider':
-      return `${EOL_MD}---${EOL_MD}`;
-    case 'column_list':
-      return [
-        EOL_MD,
-        '<div class="notion-column-list-block">',
-        EOL_MD,
-        markdown,
-        EOL_MD,
-        '</div>',
-        EOL_MD,
-      ].join('');
-    case 'column':
-      return [EOL_MD, '<div class="notion-column-block">', markdown, '</div>', EOL_MD].join('');
+
     // TODO: Add support for table, callouts, and files
-    case 'child_page':
-      if (block.has_children) return childPageToHtml(block);
     default:
       const unsupportedWarningText = unsupportedNotionBlockComment(block);
       console.warn(unsupportedWarningText);
