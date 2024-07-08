@@ -5,6 +5,8 @@ import { getBlockProperty } from '../utils';
 import { childPageToHtml } from './child-page-to-html';
 import { getYoutubeUrl } from './get-youtube-url';
 
+type BlockProperty = ReturnType<typeof getBlockProperty>;
+
 const notionBlockComment = (
   block: Block,
   comment: string = `Block type '${block.type}' is not supported yet.`,
@@ -16,15 +18,24 @@ const notionBlockComment = (
 const captionize = (content: string, caption: string = '') =>
   `<figure>${content}<figcaption>${caption}</figcaption></figure>`;
 
+const ifHasRichText = (
+  property: BlockProperty,
+): property is Extract<BlockProperty, { rich_text: RichTextItemResponse[] }> =>
+  Object.keys({ ...property }).includes('rich_text');
+const getBlockMarkdown = (block: Block): RichTextItemResponse[] => {
+  const property = getBlockProperty(block);
+  return ifHasRichText(property) ? property.rich_text : [];
+};
+
 // Converts a notion block to a markdown string.
 export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: boolean): string => {
-  const children: Block[] =
-    block.object === 'page' || block.has_children === true ? block.children : [];
-  // Get the child content of the block.
-  let childMarkdown = children
-    .map((childBlock) => notionBlockToMarkdown(childBlock, lowerTitleLevel))
-    .join('\n\n')
-    .trim();
+  const childMarkdown =
+    block.object === 'page' || block.has_children === true
+      ? block.children
+          .map((child) => notionBlockToMarkdown(child, lowerTitleLevel))
+          .join('\n\n')
+          .trim()
+      : '';
 
   // If the block is a page, return the child content.
   if (block.object === 'page') {
@@ -32,13 +43,7 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
   }
 
   // Extract the remaining content of the block and combine it with its children.
-  const property = getBlockProperty(block);
-  const textPropertyEntries = Object.entries({ ...property }).find(([key]) => key === 'rich_text');
-  const textProperty: RichTextItemResponse[] = // TODO: might cause problem
-    textPropertyEntries !== undefined && Array.isArray(textPropertyEntries[1])
-      ? textPropertyEntries[1]
-      : [];
-  let blockMarkdown = blockToString(textProperty).trim();
+  const blockMarkdown = blockToString(getBlockMarkdown(block)).trim();
 
   switch (block.type) {
     case 'audio':
@@ -78,13 +83,13 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
         block.image.type == 'external' ? block.image.external.url : block.image.file.url;
       return `![${blockToString(block.image.caption)}](${imageUrl})`;
     case 'numbered_list_item':
-      return `1. ${blockMarkdown}`
+      return `1. ${blockMarkdown}`;
     case 'paragraph':
       return blockMarkdown;
     case 'quote':
-      return `> ${blockMarkdown}`
+      return `> ${blockMarkdown}`;
     case 'to_do':
-      return `- [${block.to_do.checked ? 'x' : ' '}] ${blockMarkdown}`
+      return `- [${block.to_do.checked ? 'x' : ' '}] ${blockMarkdown}`;
     case 'toggle':
       return `<details><summary>${blockMarkdown}</summary>${childMarkdown}</details>`;
     case 'video':
