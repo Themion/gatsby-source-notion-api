@@ -16,7 +16,7 @@ const notionBlockComment = (
 };
 
 const captionize = (content: string, caption: string = '') =>
-  `<figure>${content}<figcaption>${caption}</figcaption></figure>`;
+  caption === '' ? content : `<figure>${content}<figcaption>${caption}</figcaption></figure>`;
 
 const ifHasRichText = (
   property: BlockProperty,
