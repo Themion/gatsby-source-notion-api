@@ -85,7 +85,7 @@ const getRichTextContent = (block: RichTextItemResponse): string => {
           block.mention.date.end !== null
             ? `${block.mention.date.start} → ${block.mention.date.end}`
             : block.mention.date.start;
-        return `<time datetime="${dateContent}">${dateContent}</time>`;
+        return `<time datetime="${dateContent}">${block.plain_text}</time>`;
       }
     default:
       return block.plain_text;

@@ -13,19 +13,6 @@ const notionBlockComment = (
   return `<!-- ${comment} -->`;
 };
 
-// Inserts the string at the beginning of every line of the content. If the useSpaces flag is set to
-// true, the lines after the first will instead be prepended with two spaces.
-function prependToLines(content: string, string: string, useSpaces = true) {
-  let [head, ...tail] = content.split('\n');
-
-  return [
-    `${string} ${head}`,
-    ...tail.map((line) => {
-      return `${useSpaces ? ' ' : string} ${line}`;
-    }),
-  ].join('\n');
-}
-
 const captionize = (content: string, caption: string = '') =>
   `<figure>${content}<figcaption>${caption}</figcaption></figure>`;
 
@@ -63,7 +50,7 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
       const bookmarkCaption = blockToString(block.bookmark.caption) || bookmarkUrl;
       return `[${bookmarkCaption}](${bookmarkUrl})`;
     case 'bulleted_list_item':
-      return prependToLines(blockMarkdown, '*');
+      return `* ${blockMarkdown}`;
     case 'child_page':
       if (block.has_children) return childPageToHtml(block);
       return '';
@@ -85,20 +72,19 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
     case 'heading_3':
       const headingLevel = Number(block.type.split('_')[1]);
       const headingSymbol = (lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
-      return prependToLines(blockMarkdown, headingSymbol);
+      return `${headingSymbol} ${blockMarkdown}`;
     case 'image':
       const imageUrl =
         block.image.type == 'external' ? block.image.external.url : block.image.file.url;
       return `![${blockToString(block.image.caption)}](${imageUrl})`;
     case 'numbered_list_item':
-      return prependToLines(blockMarkdown, '1.');
+      return `1. ${blockMarkdown}`
     case 'paragraph':
       return blockMarkdown;
     case 'quote':
-      return prependToLines(blockMarkdown, '>', false);
+      return `> ${blockMarkdown}`
     case 'to_do':
-      const toDoSymbol = `- [${block.to_do.checked ? 'x' : ' '}] `;
-      return prependToLines(blockMarkdown, toDoSymbol);
+      return `- [${block.to_do.checked ? 'x' : ' '}] ${blockMarkdown}`
     case 'toggle':
       return `<details><summary>${blockMarkdown}</summary>${childMarkdown}</details>`;
     case 'video':
