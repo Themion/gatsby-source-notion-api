@@ -75,38 +75,31 @@ const stylize = pipe(
   annotateLink,
 );
 
+const getRichTextContent = (block: RichTextItemResponse): string => {
+  switch (block.type) {
+    case 'equation':
+      return block.equation.expression;
+    case 'mention':
+      if (block.mention.type === 'date') {
+        const dateContent =
+          block.mention.date.end !== null
+            ? `${block.mention.date.start} → ${block.mention.date.end}`
+            : block.mention.date.start;
+        return `<time datetime="${dateContent}">${dateContent}</time>`;
+      }
+    default:
+      return block.plain_text;
+  }
+};
+
 export const blockToString = (textBlocks: RichTextItemResponse[]): string =>
   textBlocks.reduce((text, textBlock) => {
     const data: TextInfo = {
       ...textBlock.annotations,
       equation: textBlock.type === 'equation',
       link: textBlock.type === 'text' ? textBlock.text.link : null,
-      content: textBlock.plain_text,
+      content: getRichTextContent(textBlock).replaceAll('\n', '<br>'),
     };
-
-    if (textBlock.type == 'equation') {
-      data.content = textBlock.equation.expression;
-    }
-
-    if (textBlock.type == 'mention') {
-      if (textBlock.mention.type == 'user') {
-        data.content = textBlock.plain_text;
-      }
-
-      if (textBlock.mention.type == 'date') {
-        if (textBlock.mention.date.end) {
-          data.content = `${textBlock.mention.date.start} → ${textBlock.mention.date.end}`;
-        } else {
-          data.content = textBlock.mention.date.start;
-        }
-
-        data.content = `<time datetime="${data.content}">${data.content}</time>`;
-      }
-
-      if (textBlock.mention.type == 'page') {
-        data.content = textBlock.plain_text;
-      }
-    }
 
     return text.concat(stylize(data).content);
   }, '');
