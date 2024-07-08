@@ -75,17 +75,19 @@ const stylize = pipe(
   annotateLink,
 );
 
+const timeTag = (dateString: string) => {
+  const date = new Date(dateString);
+  return `<time datetime="${date.toISOString()}">${date.toLocaleString()}</time>`;
+};
+
 const getRichTextContent = (block: RichTextItemResponse): string => {
   switch (block.type) {
     case 'equation':
       return block.equation.expression;
     case 'mention':
       if (block.mention.type === 'date') {
-        const dateContent =
-          block.mention.date.end !== null
-            ? `${block.mention.date.start} → ${block.mention.date.end}`
-            : block.mention.date.start;
-        return `<time datetime="${dateContent}">${block.plain_text}</time>`;
+        const { start, end } = block.mention.date;
+        return end !== null ? `${timeTag(start)} ~ ${timeTag(end)}` : timeTag(start);
       }
     default:
       return block.plain_text;
