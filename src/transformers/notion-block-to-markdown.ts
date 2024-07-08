@@ -6,7 +6,6 @@ import { childPageToHtml } from './child-page-to-html';
 import { getYoutubeUrl } from './get-youtube-url';
 
 const EOL_MD = '\n';
-const DOUBLE_EOL_MD = EOL_MD.repeat(2);
 
 const unsupportedNotionBlockComment = (block: Block) =>
   `Block type '${block.type}' is not supported yet.`;
@@ -47,7 +46,6 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
       ? textPropertyEntries[1]
       : [];
   let blockMarkdown = blockToString(textProperty).trim();
-  let markdown = [blockMarkdown, childMarkdown].filter((text) => text).join(DOUBLE_EOL_MD);
 
   switch (block.type) {
     case 'audio':
@@ -59,16 +57,16 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
       const bookmarkCaption = blockToString(block.bookmark.caption) || bookmarkUrl;
       return `[${bookmarkCaption}](${bookmarkUrl})`;
     case 'bulleted_list_item':
-      return prependToLines(markdown.replaceAll('\n', '<br>'), '*');
+      return prependToLines(blockMarkdown.replaceAll('\n', '<br>'), '*');
     case 'child_page':
       if (block.has_children) return childPageToHtml(block);
       return '';
     case 'code':
       `\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\`${childMarkdown}`;
     case 'column':
-      return `<div class="notion-column-block">${markdown}</div>\n`;
+      return `<div class="notion-column-block">${blockMarkdown}</div>\n`;
     case 'column_list':
-      return `<div class="notion-column-list-block">${markdown}</div>\n`;
+      return `<div class="notion-column-list-block">${blockMarkdown}</div>\n`;
     case 'divider':
       return '---';
     case 'embed':
@@ -78,20 +76,20 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
     case 'heading_3':
       const headingLevel = Number(block.type.split('_')[1]);
       const headingSymbol = (lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
-      return prependToLines(markdown, headingSymbol);
+      return prependToLines(blockMarkdown.replaceAll('\n', '<br>'), headingSymbol);
     case 'image':
       const imageUrl =
         block.image.type == 'external' ? block.image.external.url : block.image.file.url;
-      return `${EOL_MD}![${blockToString(block.image.caption)}](${imageUrl})${EOL_MD}`;
+      return `![${blockToString(block.image.caption)}](${imageUrl})`;
     case 'numbered_list_item':
-      return prependToLines(markdown.replaceAll('\n', '<br>'), '1.');
+      return prependToLines(blockMarkdown.replaceAll('\n', '<br>'), '1.');
     case 'paragraph':
-      return markdown;
+      return blockMarkdown.replaceAll('\n', '<br>');
     case 'quote':
-      return prependToLines(markdown, '>', false);
+      return prependToLines(blockMarkdown, '>', false);
     case 'to_do':
       const toDoSymbol = `- [${block.to_do.checked ? 'x' : ' '}] `;
-      return prependToLines(markdown, toDoSymbol).concat(EOL_MD);
+      return prependToLines(blockMarkdown, toDoSymbol);
     case 'toggle':
       return `<details><summary>${blockMarkdown}</summary>${childMarkdown}</details>\n`;
     case 'video':
