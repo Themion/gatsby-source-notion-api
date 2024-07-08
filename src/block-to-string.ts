@@ -21,31 +21,34 @@ const pick = (key: keyof TextInfo) => (obj: TextInfo) => !!obj[key];
 const ifTrue = (predicate: Func<boolean>, transformer: Func) => (data: TextInfo) =>
   predicate(data) ? transformer(data) : data;
 
+const equationUrl = (content: string) =>
+  `http://www.sciweavers.org/tex2img.php?eq=${encodeURIComponent(
+    content,
+  )}&bc=White&fc=Black&im=jpg&fs=20&ff=arev&edit=`;
+
 const annotateEquation = ifTrue(pick('equation'), ({ content, ...data }) => ({
   ...data,
-  content: `![${content}](http://www.sciweavers.org/tex2img.php?eq=${encodeURIComponent(
-    content,
-  )}&bc=White&fc=Black&im=jpg&fs=20&ff=arev&edit=)`,
+  content: `<img src="${equationUrl(content)}" alt="${content}"></img>`,
 }));
 const annotateCode = ifTrue(pick('code'), ({ content, ...data }) => ({
   ...data,
-  content: `\`${content}\``,
+  content: `<code>${content}</code>`,
 }));
 const annotateBold = ifTrue(pick('bold'), ({ content, ...data }) => ({
   ...data,
-  content: `**${content}**`,
+  content: `<strong>${content}</strong>`,
 }));
 const annotateItalic = ifTrue(pick('italic'), ({ content, ...data }) => ({
   ...data,
-  content: `_${content}_`,
-}));
-const annotateStrikethrough = ifTrue(pick('strikethrough'), ({ content, ...data }) => ({
-  ...data,
-  content: `~~${content}~~`,
+  content: `<em>${content}</em>`,
 }));
 const annotateUnderline = ifTrue(pick('underline'), ({ content, ...data }) => ({
   ...data,
   content: `<u>${content}</u>`,
+}));
+const annotateStrikethrough = ifTrue(pick('strikethrough'), ({ content, ...data }) => ({
+  ...data,
+  content: `<del>${content}</del>`,
 }));
 const annotateColor = ifTrue(
   ({ color }) => color != 'default',
@@ -58,7 +61,7 @@ const annotateColor = ifTrue(
 const annotateLink = ifTrue(pick('link'), ({ content, link, ...data }) => ({
   ...data,
   link,
-  content: `[${content}](${link?.url ?? ''})`,
+  content: `<a href="${link?.url ?? ''}">${content}</a>`,
 }));
 
 const stylize = pipe(
@@ -66,8 +69,8 @@ const stylize = pipe(
   annotateCode,
   annotateBold,
   annotateItalic,
-  annotateStrikethrough,
   annotateUnderline,
+  annotateStrikethrough,
   annotateColor,
   annotateLink,
 );
