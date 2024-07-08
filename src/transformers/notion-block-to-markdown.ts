@@ -5,10 +5,13 @@ import { getBlockProperty } from '../utils';
 import { childPageToHtml } from './child-page-to-html';
 import { getYoutubeUrl } from './get-youtube-url';
 
-const EOL_MD = '\n';
-
-const unsupportedNotionBlockComment = (block: Block) =>
-  `Block type '${block.type}' is not supported yet.`;
+const notionBlockComment = (
+  block: Block,
+  comment: string = `Block type '${block.type}' is not supported yet.`,
+) => {
+  console.warn(comment);
+  return `<!-- ${comment} -->`;
+};
 
 // Inserts the string at the beginning of every line of the content. If the useSpaces flag is set to
 // true, the lines after the first will instead be prepended with two spaces.
@@ -113,14 +116,13 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
           videoCaption,
         );
 
-      const videoWarningText = `External video (${url}) is not supported yet: please upload video file directly or to youtube.`;
-      console.warn(videoWarningText);
-      return [EOL_MD, `<!-- ${videoWarningText} -->`, EOL_MD].join('');
+      return notionBlockComment(
+        block,
+        `External video (${url}) is not supported yet: please upload video file directly or to youtube.`,
+      );
 
     // TODO: Add support for table, callouts, and files
     default:
-      const unsupportedWarningText = unsupportedNotionBlockComment(block);
-      console.warn(unsupportedWarningText);
-      return [EOL_MD, `<!-- ${unsupportedWarningText} -->`, EOL_MD].join('');
+      return notionBlockComment(block);
   }
 };
