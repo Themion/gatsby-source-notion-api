@@ -8,6 +8,7 @@
  * @type {import('gatsby').GatsbyConfig}
  */
 const dotenv = require("dotenv")
+const { default: slugify } = require('slugify')
 
 dotenv.config()
 
@@ -42,6 +43,7 @@ module.exports = {
               return value
           }
         },
+        slugifier: ({ name }) => ({ key: 'slug', value: slugify(name).toLowerCase() })
       },
     },
   ],
