@@ -15,8 +15,15 @@ const notionBlockComment = (
   return `<!-- ${comment} -->`;
 };
 
-const captionize = (content: string, caption: string = '') =>
-  caption === '' ? content : `<figure>${content}<figcaption>${caption}</figcaption></figure>`;
+const htmlClass = (classname: string) => `class="notion-${classname.replaceAll('_', '-')}-block"`;
+
+const captionize = (content: string, caption: string = '') => {
+  const figureClass = htmlClass('figure');
+  const captionClass = htmlClass('figcaption');
+  return caption === ''
+    ? content
+    : `<figure ${figureClass}>${content}<figcaption ${captionClass}>${caption}</figcaption></figure>`;
+};
 
 const ifHasRichText = (
   property: BlockProperty,
@@ -44,16 +51,17 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
 
   // Extract the remaining content of the block and combine it with its children.
   const blockMarkdown = blockToString(getBlockMarkdown(block)).trim();
+  const blockClass = htmlClass(block.type);
 
   switch (block.type) {
     case 'audio':
       const audioUrl =
         block.audio.type == 'external' ? block.audio.external.url : block.audio.file.url;
-      return `<audio controls><source src="${audioUrl}" /></audio>`;
+      return `<audio ${blockClass} controls><source src="${audioUrl}" /></audio>`;
     case 'bookmark':
       const bookmarkUrl = block.bookmark.url;
       const bookmarkCaption = blockToString(block.bookmark.caption) || bookmarkUrl;
-      return `[${bookmarkCaption}](${bookmarkUrl})`;
+      return `[${bookmarkCaption}](${block.bookmark.url})`;
     case 'bulleted_list_item':
       return `* ${blockMarkdown}`;
     case 'child_page':
@@ -62,14 +70,14 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
     case 'code':
       `\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\`${childMarkdown}`;
     case 'column':
-      return `<div class="notion-column-block">${childMarkdown}</div>`;
+      return `<div ${blockClass}>${childMarkdown}</div>`;
     case 'column_list':
-      return `<div class="notion-column-list-block">${childMarkdown}</div>`;
+      return `<div ${blockClass}>${childMarkdown}</div>`;
     case 'divider':
       return '---';
     case 'embed':
       return captionize(
-        `<iframe src="${block.embed.url}"></iframe>`,
+        `<iframe ${blockClass} src="${block.embed.url}"></iframe>`,
         blockToString(block.embed.caption),
       );
     case 'heading_1':
@@ -91,13 +99,15 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
     case 'to_do':
       return `- [${block.to_do.checked ? 'x' : ' '}] ${blockMarkdown}`;
     case 'toggle':
-      return `<details><summary>${blockMarkdown}</summary>${childMarkdown}</details>`;
+      const detailsClass = htmlClass('details');
+      const summaryClass = htmlClass('summary');
+      return `<details ${detailsClass}><summary ${summaryClass}>${blockMarkdown}</summary>${childMarkdown}</details>`;
     case 'video':
       const url = block.video.type === 'external' ? block.video.external.url : block.video.file.url;
       const videoCaption = blockToString(block.video.caption).trim();
       if (block.video.type === 'file')
         return captionize(
-          `<video controls><source src="${url}">${videoCaption}</video>`,
+          `<video ${blockClass} controls><source src="${url}">${videoCaption}</video>`,
           videoCaption,
         );
       const youtubeUrl = getYoutubeUrl(url);

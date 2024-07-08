@@ -75,10 +75,7 @@ const stylize = pipe(
   annotateLink,
 );
 
-const timeTag = (dateString: string) => {
-  const date = new Date(dateString);
-  return `<time datetime="${date.toISOString()}">${date.toLocaleString()}</time>`;
-};
+const timeTag = (dateString: string) => `<time datetime="${dateString}">${dateString}</time>`;
 
 const getRichTextContent = (block: RichTextItemResponse): string => {
   switch (block.type) {
