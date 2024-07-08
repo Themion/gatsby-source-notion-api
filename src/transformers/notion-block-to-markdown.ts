@@ -3,6 +3,7 @@ import { blockToString } from '../block-to-string';
 import { Block, Page } from '../types';
 import { getBlockProperty } from '../utils';
 import { childPageToHtml } from './child-page-to-html';
+import { getYoutubeUrl } from './get-youtube-url';
 
 const EOL_MD = '\n';
 const DOUBLE_EOL_MD = EOL_MD.repeat(2);
@@ -61,9 +62,9 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
       const toDoSymbol = `- [${block.to_do.checked ? 'x' : ' '}] `;
       return prependToLines(markdown, toDoSymbol).concat(EOL_MD);
     case 'bulleted_list_item':
-      return prependToLines(markdown, '*').concat(EOL_MD);
+      return `\n${prependToLines(markdown.replaceAll('\n', '<br>'), '*')}\n`;
     case 'numbered_list_item':
-      return prependToLines(markdown, '1.').concat(EOL_MD);
+      return `\n${prependToLines(markdown.replaceAll('\n', '<br>'), '1.')}\n`;
     case 'toggle':
       return [
         EOL_MD,
@@ -97,17 +98,16 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
       );
     case 'video':
       const url = block.video.type === 'external' ? block.video.external.url : block.video.file.url;
-      if (block.video.type === 'external') {
-        const videoWarningText = `External video (${url}) is not supported yet: please upload video file directly.`;
-        console.warn(videoWarningText);
-        return [EOL_MD, `<!-- ${videoWarningText} -->`, EOL_MD].join();
-      }
       const videoCaption = blockToString(block.video.caption).trim();
-      return [
-        EOL_MD,
-        `<video controls><source src="${url}">${videoCaption}</video>`,
-        EOL_MD,
-      ].join();
+      if (block.video.type === 'file')
+        return `\n<video controls><source src="${url}">${videoCaption}</video>\n`;
+      const youtubeUrl = getYoutubeUrl(url);
+      if (youtubeUrl !== null)
+        return `\n<iframe width="100%" height="600" src="${youtubeUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>\n`;
+
+      const videoWarningText = `External video (${url}) is not supported yet: please upload video file directly or to youtube.`;
+      console.warn(videoWarningText);
+      return [EOL_MD, `<!-- ${videoWarningText} -->`, EOL_MD].join('');
     case 'embed':
       return [EOL_MD, block.embed.url, EOL_MD].join('');
     case 'quote':
@@ -136,6 +136,6 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
     default:
       const unsupportedWarningText = unsupportedNotionBlockComment(block);
       console.warn(unsupportedWarningText);
-      return [EOL_MD, `<!-- ${unsupportedWarningText} -->`, EOL_MD].join();
+      return [EOL_MD, `<!-- ${unsupportedWarningText} -->`, EOL_MD].join('');
   }
 };
