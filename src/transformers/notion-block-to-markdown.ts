@@ -2,6 +2,7 @@ import { RichTextItemResponse } from '@notionhq/client/build/src/api-endpoints';
 import { blockToString } from '../block-to-string';
 import { Block, Page } from '../types';
 import { getBlockProperty } from '../utils';
+import { childPageToHtml } from './child-page-to-html';
 
 const EOL_MD = '\n';
 const DOUBLE_EOL_MD = EOL_MD.repeat(2);
@@ -99,7 +100,7 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
       if (block.video.type === 'external') {
         const videoWarningText = `External video (${url}) is not supported yet: please upload video file directly.`;
         console.warn(videoWarningText);
-        return unsupportedNotionBlockComment(block);
+        return [EOL_MD, `<!-- ${videoWarningText} -->`, EOL_MD].join();
       }
       const videoCaption = blockToString(block.video.caption).trim();
       return [
@@ -130,6 +131,8 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
     case 'column':
       return [EOL_MD, '<div class="notion-column-block">', markdown, '</div>', EOL_MD].join('');
     // TODO: Add support for table, callouts, and files
+    case 'child_page':
+      if (block.has_children) return childPageToHtml(block);
     default:
       const unsupportedWarningText = unsupportedNotionBlockComment(block);
       console.warn(unsupportedWarningText);
