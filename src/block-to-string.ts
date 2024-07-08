@@ -21,31 +21,34 @@ const pick = (key: keyof TextInfo) => (obj: TextInfo) => !!obj[key];
 const ifTrue = (predicate: Func<boolean>, transformer: Func) => (data: TextInfo) =>
   predicate(data) ? transformer(data) : data;
 
+const equationUrl = (content: string) =>
+  `http://www.sciweavers.org/tex2img.php?eq=${encodeURIComponent(
+    content,
+  )}&bc=White&fc=Black&im=jpg&fs=20&ff=arev&edit=`;
+
 const annotateEquation = ifTrue(pick('equation'), ({ content, ...data }) => ({
   ...data,
-  content: `![${content}](http://www.sciweavers.org/tex2img.php?eq=${encodeURIComponent(
-    content,
-  )}&bc=White&fc=Black&im=jpg&fs=20&ff=arev&edit=)`,
+  content: `<img src="${equationUrl(content)}" alt="${content}"></img>`,
 }));
 const annotateCode = ifTrue(pick('code'), ({ content, ...data }) => ({
   ...data,
-  content: `\`${content}\``,
+  content: `<code>${content}</code>`,
 }));
 const annotateBold = ifTrue(pick('bold'), ({ content, ...data }) => ({
   ...data,
-  content: `**${content}**`,
+  content: `<strong>${content}</strong>`,
 }));
 const annotateItalic = ifTrue(pick('italic'), ({ content, ...data }) => ({
   ...data,
-  content: `_${content}_`,
-}));
-const annotateStrikethrough = ifTrue(pick('strikethrough'), ({ content, ...data }) => ({
-  ...data,
-  content: `~~${content}~~`,
+  content: `<em>${content}</em>`,
 }));
 const annotateUnderline = ifTrue(pick('underline'), ({ content, ...data }) => ({
   ...data,
   content: `<u>${content}</u>`,
+}));
+const annotateStrikethrough = ifTrue(pick('strikethrough'), ({ content, ...data }) => ({
+  ...data,
+  content: `<del>${content}</del>`,
 }));
 const annotateColor = ifTrue(
   ({ color }) => color != 'default',
@@ -58,7 +61,7 @@ const annotateColor = ifTrue(
 const annotateLink = ifTrue(pick('link'), ({ content, link, ...data }) => ({
   ...data,
   link,
-  content: `[${content}](${link?.url ?? ''})`,
+  content: `<a href="${link?.url ?? ''}">${content}</a>`,
 }));
 
 const stylize = pipe(
@@ -66,11 +69,27 @@ const stylize = pipe(
   annotateCode,
   annotateBold,
   annotateItalic,
-  annotateStrikethrough,
   annotateUnderline,
+  annotateStrikethrough,
   annotateColor,
   annotateLink,
 );
+
+const timeTag = (dateString: string) => `<time datetime="${dateString}">${dateString}</time>`;
+
+const getRichTextContent = (block: RichTextItemResponse): string => {
+  switch (block.type) {
+    case 'equation':
+      return block.equation.expression;
+    case 'mention':
+      if (block.mention.type === 'date') {
+        const { start, end } = block.mention.date;
+        return end !== null ? `${timeTag(start)} ~ ${timeTag(end)}` : timeTag(start);
+      }
+    default:
+      return block.plain_text;
+  }
+};
 
 export const blockToString = (textBlocks: RichTextItemResponse[]): string =>
   textBlocks.reduce((text, textBlock) => {
@@ -78,32 +97,8 @@ export const blockToString = (textBlocks: RichTextItemResponse[]): string =>
       ...textBlock.annotations,
       equation: textBlock.type === 'equation',
       link: textBlock.type === 'text' ? textBlock.text.link : null,
-      content: textBlock.plain_text,
+      content: getRichTextContent(textBlock).replaceAll('\n', '<br>'),
     };
-
-    if (textBlock.type == 'equation') {
-      data.content = textBlock.equation.expression;
-    }
-
-    if (textBlock.type == 'mention') {
-      if (textBlock.mention.type == 'user') {
-        data.content = textBlock.plain_text;
-      }
-
-      if (textBlock.mention.type == 'date') {
-        if (textBlock.mention.date.end) {
-          data.content = `${textBlock.mention.date.start} → ${textBlock.mention.date.end}`;
-        } else {
-          data.content = textBlock.mention.date.start;
-        }
-
-        data.content = `<time datetime="${data.content}">${data.content}</time>`;
-      }
-
-      if (textBlock.mention.type == 'page') {
-        data.content = textBlock.plain_text;
-      }
-    }
 
     return text.concat(stylize(data).content);
   }, '');

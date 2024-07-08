@@ -5,34 +5,44 @@ import { getBlockProperty } from '../utils';
 import { childPageToHtml } from './child-page-to-html';
 import { getYoutubeUrl } from './get-youtube-url';
 
-const EOL_MD = '\n';
-const DOUBLE_EOL_MD = EOL_MD.repeat(2);
+type BlockProperty = ReturnType<typeof getBlockProperty>;
 
-const unsupportedNotionBlockComment = (block: Block) =>
-  `Block type '${block.type}' is not supported yet.`;
+const notionBlockComment = (
+  block: Block,
+  comment: string = `Block type '${block.type}' is not supported yet.`,
+) => {
+  console.warn(comment);
+  return `<!-- ${comment} -->`;
+};
 
-// Inserts the string at the beginning of every line of the content. If the useSpaces flag is set to
-// true, the lines after the first will instead be prepended with two spaces.
-function prependToLines(content: string, string: string, useSpaces = true) {
-  let [head, ...tail] = content.split('\n');
+const htmlClass = (classname: string) => `class="notion-${classname.replaceAll('_', '-')}-block"`;
 
-  return [
-    `${string} ${head}`,
-    ...tail.map((line) => {
-      return `${useSpaces ? ' ' : string} ${line}`;
-    }),
-  ].join('\n');
-}
+const captionize = (content: string, caption: string = '') => {
+  const figureClass = htmlClass('figure');
+  const captionClass = htmlClass('figcaption');
+  return caption === ''
+    ? content
+    : `<figure ${figureClass}>${content}<figcaption ${captionClass}>${caption}</figcaption></figure>`;
+};
+
+const ifHasRichText = (
+  property: BlockProperty,
+): property is Extract<BlockProperty, { rich_text: RichTextItemResponse[] }> =>
+  Object.keys({ ...property }).includes('rich_text');
+const getBlockMarkdown = (block: Block): RichTextItemResponse[] => {
+  const property = getBlockProperty(block);
+  return ifHasRichText(property) ? property.rich_text : [];
+};
 
 // Converts a notion block to a markdown string.
 export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: boolean): string => {
-  const children: Block[] =
-    block.object === 'page' || block.has_children === true ? block.children : [];
-  // Get the child content of the block.
-  let childMarkdown = children
-    .map((childBlock) => notionBlockToMarkdown(childBlock, lowerTitleLevel))
-    .join('')
-    .trim();
+  const childMarkdown =
+    block.object === 'page' || block.has_children === true
+      ? block.children
+          .map((child) => notionBlockToMarkdown(child, lowerTitleLevel))
+          .join('\n\n')
+          .trim()
+      : '';
 
   // If the block is a page, return the child content.
   if (block.object === 'page') {
@@ -40,102 +50,80 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
   }
 
   // Extract the remaining content of the block and combine it with its children.
-  const property = getBlockProperty(block);
-  const textPropertyEntries = Object.entries({ ...property }).find(([key]) => key === 'rich_text');
-  const textProperty: RichTextItemResponse[] = // TODO: might cause problem
-    textPropertyEntries !== undefined && Array.isArray(textPropertyEntries[1])
-      ? textPropertyEntries[1]
-      : [];
-  let blockMarkdown = blockToString(textProperty).trim();
-  let markdown = [blockMarkdown, childMarkdown].filter((text) => text).join(DOUBLE_EOL_MD);
+  const blockMarkdown = blockToString(getBlockMarkdown(block)).trim();
+  const blockClass = htmlClass(block.type);
 
   switch (block.type) {
-    case 'paragraph':
-      return [EOL_MD, markdown, EOL_MD].join('');
+    case 'audio':
+      const audioUrl =
+        block.audio.type == 'external' ? block.audio.external.url : block.audio.file.url;
+      return `<audio ${blockClass} controls><source src="${audioUrl}" /></audio>`;
+    case 'bookmark':
+      const bookmarkUrl = block.bookmark.url;
+      const bookmarkCaption = blockToString(block.bookmark.caption) || bookmarkUrl;
+      return `[${bookmarkCaption}](${block.bookmark.url})`;
+    case 'bulleted_list_item':
+      return `* ${blockMarkdown}`;
+    case 'child_page':
+      if (block.has_children) return childPageToHtml(block);
+      return '';
+    case 'code':
+      `\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\`${childMarkdown}`;
+    case 'column':
+      return `<div ${blockClass}>${childMarkdown}</div>`;
+    case 'column_list':
+      return `<div ${blockClass}>${childMarkdown}</div>`;
+    case 'divider':
+      return '---';
+    case 'embed':
+      return captionize(
+        `<iframe ${blockClass} src="${block.embed.url}"></iframe>`,
+        blockToString(block.embed.caption),
+      );
     case 'heading_1':
     case 'heading_2':
     case 'heading_3':
       const headingLevel = Number(block.type.split('_')[1]);
       const headingSymbol = (lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
-      return [EOL_MD, prependToLines(markdown, headingSymbol), EOL_MD].join('');
-    case 'to_do':
-      const toDoSymbol = `- [${block.to_do.checked ? 'x' : ' '}] `;
-      return prependToLines(markdown, toDoSymbol).concat(EOL_MD);
-    case 'bulleted_list_item':
-      return `\n${prependToLines(markdown.replaceAll('\n', '<br>'), '*')}\n`;
-    case 'numbered_list_item':
-      return `\n${prependToLines(markdown.replaceAll('\n', '<br>'), '1.')}\n`;
-    case 'toggle':
-      return [
-        EOL_MD,
-        '<details><summary>',
-        blockMarkdown,
-        '</summary>',
-        childMarkdown,
-        '</details>',
-        EOL_MD,
-      ].join('');
-    case 'code':
-      return [
-        EOL_MD,
-        `\`\`\` ${block.code.language}${EOL_MD}`,
-        blockMarkdown,
-        EOL_MD,
-        '```',
-        EOL_MD,
-        childMarkdown,
-        EOL_MD,
-      ].join('');
+      return `${headingSymbol} ${blockMarkdown}`;
     case 'image':
       const imageUrl =
         block.image.type == 'external' ? block.image.external.url : block.image.file.url;
-      return `${EOL_MD}![${blockToString(block.image.caption)}](${imageUrl})${EOL_MD}`;
-    case 'audio':
-      const audioUrl =
-        block.audio.type == 'external' ? block.audio.external.url : block.audio.file.url;
-      return [EOL_MD, '<audio controls>', `<source src="${audioUrl}" />`, '</audio>', EOL_MD].join(
-        '',
-      );
+      return `![${blockToString(block.image.caption)}](${imageUrl})`;
+    case 'numbered_list_item':
+      return `1. ${blockMarkdown}`;
+    case 'paragraph':
+      return blockMarkdown;
+    case 'quote':
+      return `> ${blockMarkdown}`;
+    case 'to_do':
+      return `- [${block.to_do.checked ? 'x' : ' '}] ${blockMarkdown}`;
+    case 'toggle':
+      const detailsClass = htmlClass('details');
+      const summaryClass = htmlClass('summary');
+      return `<details ${detailsClass}><summary ${summaryClass}>${blockMarkdown}</summary>${childMarkdown}</details>`;
     case 'video':
       const url = block.video.type === 'external' ? block.video.external.url : block.video.file.url;
       const videoCaption = blockToString(block.video.caption).trim();
       if (block.video.type === 'file')
-        return `\n<video controls><source src="${url}">${videoCaption}</video>\n`;
+        return captionize(
+          `<video ${blockClass} controls><source src="${url}">${videoCaption}</video>`,
+          videoCaption,
+        );
       const youtubeUrl = getYoutubeUrl(url);
       if (youtubeUrl !== null)
-        return `\n<iframe width="100%" height="600" src="${youtubeUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>\n`;
+        return captionize(
+          `<iframe width="100%" height="600" src="${youtubeUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`,
+          videoCaption,
+        );
 
-      const videoWarningText = `External video (${url}) is not supported yet: please upload video file directly or to youtube.`;
-      console.warn(videoWarningText);
-      return [EOL_MD, `<!-- ${videoWarningText} -->`, EOL_MD].join('');
-    case 'embed':
-      return [EOL_MD, block.embed.url, EOL_MD].join('');
-    case 'quote':
-      return [EOL_MD, prependToLines(markdown, '>', false), EOL_MD].join('');
-    case 'bookmark':
-      const bookmarkUrl = block.bookmark.url;
-      const bookmarkCaption = blockToString(block.bookmark.caption) || bookmarkUrl;
-      return `${EOL_MD}[${bookmarkCaption}](${bookmarkUrl})${EOL_MD}`;
-    case 'divider':
-      return `${EOL_MD}---${EOL_MD}`;
-    case 'column_list':
-      return [
-        EOL_MD,
-        '<div class="notion-column-list-block">',
-        EOL_MD,
-        markdown,
-        EOL_MD,
-        '</div>',
-        EOL_MD,
-      ].join('');
-    case 'column':
-      return [EOL_MD, '<div class="notion-column-block">', markdown, '</div>', EOL_MD].join('');
+      return notionBlockComment(
+        block,
+        `External video (${url}) is not supported yet: please upload video file directly or to youtube.`,
+      );
+
     // TODO: Add support for table, callouts, and files
-    case 'child_page':
-      if (block.has_children) return childPageToHtml(block);
     default:
-      const unsupportedWarningText = unsupportedNotionBlockComment(block);
-      console.warn(unsupportedWarningText);
-      return [EOL_MD, `<!-- ${unsupportedWarningText} -->`, EOL_MD].join('');
+      return notionBlockComment(block);
   }
 };
