@@ -31,7 +31,7 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
   // Get the child content of the block.
   let childMarkdown = children
     .map((childBlock) => notionBlockToMarkdown(childBlock, lowerTitleLevel))
-    .join('')
+    .join('\n')
     .trim();
 
   // If the block is a page, return the child content.
@@ -66,7 +66,7 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
     case 'code':
       `\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\`${childMarkdown}`;
     case 'column':
-      return [EOL_MD, '<div class="notion-column-block">', markdown, '</div>', EOL_MD].join('');
+      return `<div class="notion-column-block">${markdown}</div>\n`;
     case 'column_list':
       return `<div class="notion-column-list-block">${markdown}</div>\n`;
     case 'divider':
@@ -78,38 +78,30 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
     case 'heading_3':
       const headingLevel = Number(block.type.split('_')[1]);
       const headingSymbol = (lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
-      return [EOL_MD, prependToLines(markdown, headingSymbol), EOL_MD].join('');
+      return prependToLines(markdown, headingSymbol);
     case 'image':
       const imageUrl =
         block.image.type == 'external' ? block.image.external.url : block.image.file.url;
       return `${EOL_MD}![${blockToString(block.image.caption)}](${imageUrl})${EOL_MD}`;
     case 'numbered_list_item':
-      return `\n${prependToLines(markdown.replaceAll('\n', '<br>'), '1.')}\n`;
+      return prependToLines(markdown.replaceAll('\n', '<br>'), '1.');
     case 'paragraph':
-      return [EOL_MD, markdown, EOL_MD].join('');
+      return markdown;
     case 'quote':
-      return [EOL_MD, prependToLines(markdown, '>', false), EOL_MD].join('');
+      return prependToLines(markdown, '>', false);
     case 'to_do':
       const toDoSymbol = `- [${block.to_do.checked ? 'x' : ' '}] `;
       return prependToLines(markdown, toDoSymbol).concat(EOL_MD);
     case 'toggle':
-      return [
-        EOL_MD,
-        '<details><summary>',
-        blockMarkdown,
-        '</summary>',
-        childMarkdown,
-        '</details>',
-        EOL_MD,
-      ].join('');
+      return `<details><summary>${blockMarkdown}</summary>${childMarkdown}</details>\n`;
     case 'video':
       const url = block.video.type === 'external' ? block.video.external.url : block.video.file.url;
       const videoCaption = blockToString(block.video.caption).trim();
       if (block.video.type === 'file')
-        return `\n<video controls><source src="${url}">${videoCaption}</video>\n`;
+        return `<video controls><source src="${url}">${videoCaption}</video>\n`;
       const youtubeUrl = getYoutubeUrl(url);
       if (youtubeUrl !== null)
-        return `\n<iframe width="100%" height="600" src="${youtubeUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>\n`;
+        return `<iframe width="100%" height="600" src="${youtubeUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>\n`;
 
       const videoWarningText = `External video (${url}) is not supported yet: please upload video file directly or to youtube.`;
       console.warn(videoWarningText);
