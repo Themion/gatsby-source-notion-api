@@ -11,9 +11,6 @@ importers:
       '@notionhq/client':
         specifier: ^2.2.15
         version: 2.2.15
-      slugify:
-        specifier: ^1.6.6
-        version: 1.6.6
       yaml:
         specifier: ^1.10.2
         version: 1.10.2
