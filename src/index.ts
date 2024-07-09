@@ -1,2 +1,2 @@
-import type { KeyConverter, ValueConverter } from './types';
-export type { KeyConverter, ValueConverter };
+import type { KeyConverter, Slugifier, ValueConverter } from './types';
+export type { KeyConverter, Slugifier, ValueConverter };
