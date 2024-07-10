@@ -30,6 +30,11 @@ const annotateEquation = ifTrue(pick('equation'), ({ content, ...data }) => ({
   ...data,
   content: `<img src="${equationUrl(content)}" alt="${content}"></img>`,
 }));
+const annotateLink = ifTrue(pick('link'), ({ content, link, ...data }) => ({
+  ...data,
+  link,
+  content: `<a href="${link?.url ?? ''}">${content}</a>`,
+}));
 const annotateCode = ifTrue(pick('code'), ({ content, ...data }) => ({
   ...data,
   content: `<code>${content}</code>`,
@@ -58,21 +63,16 @@ const annotateColor = ifTrue(
     content: `<span notion-color="${color}">${content}</span>`,
   }),
 );
-const annotateLink = ifTrue(pick('link'), ({ content, link, ...data }) => ({
-  ...data,
-  link,
-  content: `<a href="${link?.url ?? ''}">${content}</a>`,
-}));
 
 const stylize = pipe(
   annotateEquation,
+  annotateLink,
   annotateCode,
   annotateBold,
   annotateItalic,
   annotateUnderline,
   annotateStrikethrough,
   annotateColor,
-  annotateLink,
 );
 
 const timeTag = (dateString: string) => `<time datetime="${dateString}">${dateString}</time>`;
