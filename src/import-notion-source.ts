@@ -1,11 +1,11 @@
-import { NodePluginArgs } from 'gatsby';
+import type { NodePluginArgs } from 'gatsby';
 import YAML from 'yaml';
 import { getPages } from './notion-api/get-pages';
 import { updatePage } from './notion-api/update-page';
 import { pageToProperties } from './transformers/get-page-properties';
 import { getNotionPageTitle } from './transformers/get-page-title';
 import { notionBlockToMarkdown } from './transformers/notion-block-to-markdown';
-import { NormalizedValue, Options } from './types';
+import type { NormalizedValue, Options } from './types';
 import { getPropertyContent } from './utils';
 
 const NOTION_NODE_TYPE = 'Notion';

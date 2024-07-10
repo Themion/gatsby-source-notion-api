@@ -1,5 +1,5 @@
 import { blockToString } from '../block-to-string';
-import {
+import type {
   InaccessibleNotionAPIUser,
   NormalizedValue,
   NotionAPIFile,

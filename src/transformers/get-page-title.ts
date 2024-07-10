@@ -1,5 +1,5 @@
 import { blockToString } from '../block-to-string';
-import { Page } from '../types';
+import type { Page } from '../types';
 
 type TitleProperty = Extract<Page['properties'][string], { type: 'title' }>;
 

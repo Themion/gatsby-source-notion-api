@@ -1,6 +1,6 @@
-import { GatsbyNode, PluginOptions } from 'gatsby';
+import type { GatsbyNode, PluginOptions } from 'gatsby';
 import { importNotionSource } from './import-notion-source';
-import { Options } from './types';
+import type { Options } from './types';
 
 export const sourceNodes: GatsbyNode['sourceNodes'] = (args, options: PluginOptions & Options) =>
   importNotionSource(args, options);

@@ -1,5 +1,5 @@
 import { RichTextItemResponse } from '@notionhq/client/build/src/api-endpoints';
-import { Block } from '../types';
+import type { Block } from '../types';
 
 const richTextToCode = (blockList: RichTextItemResponse[], slot: string) =>
   blockList
