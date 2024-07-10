@@ -113,3 +113,15 @@ export type Slugifier = (properties: Record<string, NormalizedValue>) => {
   key: string;
   value: string;
 };
+
+export type Options = {
+  token: string;
+  databaseId: string;
+  notionVersion: string;
+  propsToFrontmatter: boolean;
+  lowerTitleLevel: boolean;
+  devServerRefreshInterval?: number;
+  keyConverter: KeyConverter;
+  valueConverter: ValueConverter;
+  slugifier?: Slugifier;
+};
