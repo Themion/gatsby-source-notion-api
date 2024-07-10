@@ -186,7 +186,7 @@ export function getPropertyContentFromUser(
       avatar: user.avatar_url,
       email: user.person.email ?? null,
     };
-  } else if (user.bot.owner.type === 'user') {
+  } else if (user.bot.owner?.type === 'user') {
     // extract user information from a bot authorized by a user (i.e. not an internal integration)
     return getPropertyContentFromUser(user.bot.owner.user);
   }
