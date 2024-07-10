@@ -5,7 +5,7 @@ import {
 } from '@notionhq/client/build/src/api-endpoints';
 import type { GatsbyCache, Reporter } from 'gatsby';
 import { errorMessage } from '../error-message';
-import { Block, NotionAPIPage, Page } from '../types';
+import type { Block, NotionAPIPage, Page } from '../types';
 import { isFulfilled, isPageAccessible } from '../utils';
 import { getBlocks } from './get-blocks';
 

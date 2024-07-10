@@ -1,7 +1,7 @@
 import { Client } from '@notionhq/client';
 import type { Reporter } from 'gatsby';
 import { errorMessage } from '../error-message';
-import { Block } from '../types';
+import type { Block } from '../types';
 import { isFulfilled, isPropertyAccessible, isPropertySupported } from '../utils';
 
 type GetBlockOption = {

@@ -8,9 +8,39 @@
  * @type {import('gatsby').GatsbyConfig}
  */
 const dotenv = require("dotenv")
-const { default: slugify } = require('slugify')
+const { default: slugify } = require("slugify")
 
 dotenv.config()
+
+/**
+ * @type {import('@themion/gatsby-source-notion-api').NotionSourceOptions}
+ */
+const notionSourceOption = {
+  token: process.env.NOTION_TOKEN,
+  databaseId: process.env.NOTION_DATABASE,
+  devServerRefreshInterval: 10000,
+  keyConverter: ({ type, name }) => {
+    if (type === "people") return "person"
+    return name
+  },
+  valueConverter: ({ type, value }) => {
+    if (value === null) return value
+    switch (type) {
+      case "date":
+        return value.start
+      case "select":
+      case "status":
+      case "multi_select":
+        return value.name
+      default:
+        return value
+    }
+  },
+  slugifier: ({ name }) => ({
+    key: "slug",
+    value: slugify(name).toLowerCase(),
+  }),
+}
 
 module.exports = {
   siteMetadata: {
@@ -23,28 +53,7 @@ module.exports = {
     `gatsby-transformer-remark`,
     {
       resolve: `@themion/gatsby-source-notion-api`,
-      options: {
-        token: process.env.NOTION_TOKEN,
-        databaseId: process.env.NOTION_DATABASE,
-        keyConverter: ({ type, name }) => {
-          if (type === "people") return "person"
-          return name
-        },
-        valueConverter: ({ type, value }) => {
-          if (value === null) return value
-          switch (type) {
-            case "date":
-              return value.start
-            case "select":
-            case "status":
-            case "multi_select":
-              return value.name
-            default:
-              return value
-          }
-        },
-        slugifier: ({ name }) => ({ key: 'slug', value: slugify(name).toLowerCase() })
-      },
+      options: notionSourceOption,
     },
   ],
 }

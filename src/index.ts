@@ -1,2 +1,7 @@
-import type { KeyConverter, Slugifier, ValueConverter } from './types';
-export type { KeyConverter, Slugifier, ValueConverter };
+import type {
+  KeyConverter,
+  Options as NotionSourceOptions,
+  Slugifier,
+  ValueConverter,
+} from './types';
+export type { KeyConverter, NotionSourceOptions, Slugifier, ValueConverter };
