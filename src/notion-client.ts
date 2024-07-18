@@ -1,0 +1,185 @@
+import { APIErrorCode, Client, isNotionClientError } from '@notionhq/client';
+import {
+  DatabaseObjectResponse,
+  PageObjectResponse,
+} from '@notionhq/client/build/src/api-endpoints';
+import { GatsbyCache, Reporter } from 'gatsby';
+import { Block, NotionAPIPage, Page } from './types';
+import {
+  isFulfilled,
+  isPageAccessible,
+  isPropertyAccessible,
+  isPropertySupported,
+  wait,
+} from './utils';
+
+type ClientConfig = {
+  token: string;
+  notionVersion: string;
+  reporter: Reporter;
+  cache: GatsbyCache;
+};
+
+type UpdatePageOption = {
+  pageId: string;
+  key: string;
+  value: string;
+};
+
+type FetchNotionData<T> = (
+  cursor: string | null,
+) => Promise<{ nextCursor: string | null; data: T[] }>;
+
+const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item is NotionAPIPage =>
+  item.object === 'page';
+
+class NotionClient {
+  private readonly client: Client;
+  private readonly reporter: Reporter;
+  private readonly cache: GatsbyCache;
+
+  constructor({ token, notionVersion, reporter, cache }: ClientConfig) {
+    this.client = new Client({ auth: token, notionVersion });
+    this.reporter = reporter;
+    this.cache = cache;
+  }
+
+  async handleNotionError(error: unknown) {
+    if (!isNotionClientError(error)) this.reporter.panic('Unknwon Error has thrown!');
+    switch (error.name) {
+      case 'APIResponseError':
+        switch (error.code) {
+          case APIErrorCode.RateLimited:
+            const retryAfter = (error.headers as Headers).get('retry-after');
+            await wait(parseInt(retryAfter || `${1000 * 60}`, 10));
+          case APIErrorCode.InternalServerError:
+            await wait(1000 * 30);
+          default:
+            this.reporter.panic(error.message);
+        }
+      case 'RequestTimeoutError':
+        await wait(1000 * 30);
+      case 'UnknownHTTPResponseError':
+        this.reporter.panic(error.message);
+    }
+  }
+
+  private async fetchAll<T>(fetch: FetchNotionData<T>) {
+    const dataList: T[] = [];
+    let cursor: string | null = null;
+
+    try {
+      do {
+        const { nextCursor, data } = await fetch(cursor);
+        dataList.push(...data);
+        cursor = nextCursor;
+      } while (cursor != null);
+    } catch (error) {
+      await this.handleNotionError(error);
+    }
+
+    return dataList;
+  }
+
+  private getBlock(id: string): FetchNotionData<Block> {
+    const fetch = async (cursor: string | null) => {
+      const { results, next_cursor } = await this.client.blocks.children.list({
+        block_id: id,
+        start_cursor: cursor ?? undefined,
+      });
+
+      const blocks = await Promise.allSettled(
+        results
+          .filter(isPropertyAccessible)
+          .filter(isPropertySupported)
+          .map(
+            async (block): Promise<Block> => ({
+              ...block,
+              ...(block.has_children
+                ? { has_children: true, children: await this.getBlocks(block.id) }
+                : { has_children: false }),
+            }),
+          ),
+      );
+
+      return {
+        data: blocks.filter(isFulfilled).map(({ value }) => value),
+        nextCursor: next_cursor,
+      };
+    };
+
+    return fetch.bind(this);
+  }
+
+  async getBlocks(id: string) {
+    return this.fetchAll(this.getBlock(id));
+  }
+
+  private getPage(id: string): FetchNotionData<Page> {
+    const fetch = async (cursor: string | null) => {
+      const { results, next_cursor } = await this.client.databases.query({
+        database_id: id,
+        start_cursor: cursor ?? undefined,
+      });
+
+      const fetchedPages: PromiseSettledResult<Page>[] = await Promise.allSettled(
+        results
+          .filter(isPageAccessible)
+          .filter(isPageObject)
+          .map(
+            async (result): Promise<Page> => ({
+              ...result,
+              children: await this.getBlocks(result.id),
+            }),
+          ),
+      );
+
+      return {
+        data: fetchedPages.filter(isFulfilled).map(({ value }) => value),
+        nextCursor: next_cursor,
+      };
+    };
+
+    return fetch.bind(this);
+  }
+
+  async getPages(databaseId: string) {
+    return this.fetchAll(this.getPage(databaseId));
+  }
+
+  async updatePage({ pageId, key, value }: UpdatePageOption) {
+    try {
+      const result = await this.client.pages.update({
+        page_id: pageId,
+        properties: {
+          [key]: {
+            type: 'rich_text',
+            rich_text: [
+              {
+                type: 'text',
+                text: {
+                  content: value,
+                  link: null,
+                },
+                annotations: {
+                  bold: false,
+                  italic: false,
+                  strikethrough: false,
+                  underline: false,
+                  code: false,
+                  color: 'default',
+                },
+              },
+            ],
+          },
+        },
+      });
+
+      return isPageAccessible(result) ? result.properties[key] : null;
+    } catch {
+      return null;
+    }
+  }
+}
+
+export default NotionClient;
