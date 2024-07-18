@@ -36,6 +36,7 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
 class NotionClient {
   private readonly client: Client;
   private readonly reporter: Reporter;
+  // eslint-disable-line @typescript-eslint/no-unused-vars
   private readonly cache: GatsbyCache;
 
   constructor({ token, notionVersion, reporter, cache }: ClientConfig) {
@@ -50,15 +51,22 @@ class NotionClient {
       case 'APIResponseError':
         switch (error.code) {
           case APIErrorCode.RateLimited:
-            const retryAfter = (error.headers as Headers).get('retry-after');
-            await wait(parseInt(retryAfter || `${1000 * 60}`, 10));
+            const retryAfter = parseInt((error.headers as Headers).get('retry-after') || `${1000 * 60}`, 10)
+            console.warn(`API Rate Limit reached! retrying after ${Math.floor(retryAfter / 1000)} seconds...`)
+            await wait(retryAfter);
+            break;
           case APIErrorCode.InternalServerError:
+          case APIErrorCode.ServiceUnavailable:
             await wait(1000 * 30);
+            console.warn('Server-side error is thrown! retrying after 30 seconds...')
+            break;
           default:
             this.reporter.panic(error.message);
         }
+        break;
       case 'RequestTimeoutError':
         await wait(1000 * 30);
+        break;
       case 'UnknownHTTPResponseError':
         this.reporter.panic(error.message);
     }
