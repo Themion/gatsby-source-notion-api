@@ -10,9 +10,21 @@ export const onCreateDevServer: GatsbyNode['onCreateDevServer'] = (
   options: PluginOptions & Options,
 ) => {
   const { devServerRefreshInterval } = options;
+  
   if (devServerRefreshInterval) {
-    const intervalFunc = () => importNotionSource(args, options)
-      .catch((error) => console.warn(`Failed to re-fetch Notion data: ${error}`))
+    let intervalFlag = false;
+
+    const intervalFunc = () => {
+      if (intervalFlag) {
+        console.warn('Refetch cancelled due to previous fetch!')
+        return;
+      }
+      intervalFlag = true;
+
+      importNotionSource(args, options)
+        .catch((error) => console.warn(`Failed to refetch Notion data: ${error}`))
+        .finally(() => { intervalFlag = false; })
+    }
     setInterval(intervalFunc, devServerRefreshInterval);
   }
 };
