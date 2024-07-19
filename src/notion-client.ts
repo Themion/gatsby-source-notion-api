@@ -51,9 +51,9 @@ class NotionClient {
       case 'APIResponseError':
         switch (error.code) {
           case APIErrorCode.RateLimited:
-            const retryAfter = parseInt((error.headers as Headers).get('retry-after') || `${1000 * 60}`, 10)
-            console.warn(`API Rate Limit reached! retrying after ${Math.floor(retryAfter / 1000)} seconds...`)
-            await wait(retryAfter);
+            const retryAfter = parseInt((error.headers as Headers).get('retry-after') ?? '60', 10)
+            console.warn(`API Rate Limit reached! retrying after ${Math.floor(retryAfter)} seconds...`)
+            await wait(retryAfter * 1000);
             break;
           case APIErrorCode.InternalServerError:
           case APIErrorCode.ServiceUnavailable:
