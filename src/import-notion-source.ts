@@ -1,7 +1,6 @@
 import type { NodePluginArgs } from 'gatsby';
 import YAML from 'yaml';
-import { getPages } from './notion-api/get-pages';
-import { updatePage } from './notion-api/update-page';
+import NotionClient from './notion-client';
 import { pageToProperties } from './transformers/get-page-properties';
 import { getNotionPageTitle } from './transformers/get-page-title';
 import { notionBlockToMarkdown } from './transformers/notion-block-to-markdown';
@@ -11,7 +10,7 @@ import { getPropertyContent } from './utils';
 const NOTION_NODE_TYPE = 'Notion';
 
 export const importNotionSource = async (
-  { actions, createContentDigest, createNodeId, reporter, cache }: NodePluginArgs,
+  notionPluginArgs: NodePluginArgs,
   {
     token,
     databaseId,
@@ -23,14 +22,17 @@ export const importNotionSource = async (
     slugifier,
   }: Options,
 ) => {
+  const { actions, createContentDigest, createNodeId } = notionPluginArgs;
+
+  const notionClient = new NotionClient({ token, notionVersion, ...notionPluginArgs });
   const getPageProperties = pageToProperties(valueConverter, keyConverter);
-  const pages = await getPages({ token, databaseId, notionVersion, reporter, cache });
+  const pages = await notionClient.getPages(databaseId);
 
   const appendSlug = async (pageId: string, properties: Record<string, NormalizedValue>) => {
     if (!slugifier) return;
     const { key, value } = slugifier(properties);
     if (!!properties[key]) return;
-    const slug = await updatePage({ token, notionVersion, pageId, key, value });
+    const slug = await notionClient.updatePage({ pageId, key, value });
     if (slug === null) return;
     properties[key] = getPropertyContent(slug);
   };
