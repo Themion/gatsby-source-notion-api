@@ -10,20 +10,27 @@ export const onCreateDevServer: GatsbyNode['onCreateDevServer'] = (
   options: PluginOptions & Options,
 ) => {
   const { devServerRefreshInterval } = options;
+  const { reporter } = args
   
   if (devServerRefreshInterval) {
     let intervalFlag = false;
-
+    
     const intervalFunc = () => {
       if (intervalFlag) {
-        console.warn('Refetch cancelled due to previous fetch!')
+        reporter.warn('Refetch cancelled to prevent overriding previous fetch!')
         return;
       }
       intervalFlag = true;
 
+      const activity = reporter.activityTimer(`Refetching data from notion database ${options.databaseId}`)
+      activity.start()
+
       importNotionSource(args, options)
-        .catch((error) => console.warn(`Failed to refetch Notion data: ${error}`))
-        .finally(() => { intervalFlag = false; })
+        .catch(reporter.error)
+        .finally(() => {
+          intervalFlag = false; 
+          activity.end();
+        })
     }
     setInterval(intervalFunc, devServerRefreshInterval);
   }
