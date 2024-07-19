@@ -10,7 +10,7 @@ import { getPropertyContent } from './utils';
 const NOTION_NODE_TYPE = 'Notion';
 
 export const importNotionSource = async (
-  { actions, createContentDigest, createNodeId, reporter, cache }: NodePluginArgs,
+  notionPluginArgs: NodePluginArgs,
   {
     token,
     databaseId,
@@ -22,7 +22,9 @@ export const importNotionSource = async (
     slugifier,
   }: Options,
 ) => {
-  const notionClient = new NotionClient({ token, notionVersion, reporter, cache });
+  const { actions, createContentDigest, createNodeId } = notionPluginArgs;
+
+  const notionClient = new NotionClient({ token, notionVersion, ...notionPluginArgs });
   const getPageProperties = pageToProperties(valueConverter, keyConverter);
   const pages = await notionClient.getPages(databaseId);
 

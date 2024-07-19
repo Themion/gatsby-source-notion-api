@@ -3,7 +3,7 @@ import {
   DatabaseObjectResponse,
   PageObjectResponse,
 } from '@notionhq/client/build/src/api-endpoints';
-import { GatsbyCache, Reporter } from 'gatsby';
+import { NodePluginArgs, Reporter } from 'gatsby';
 import { Block, NotionAPIPage, Page } from './types';
 import {
   isFulfilled,
@@ -16,9 +16,7 @@ import {
 type ClientConfig = {
   token: string;
   notionVersion: string;
-  reporter: Reporter;
-  cache: GatsbyCache;
-};
+} & NodePluginArgs;
 
 type UpdatePageOption = {
   pageId: string;
@@ -36,13 +34,10 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
 class NotionClient {
   private readonly client: Client;
   private readonly reporter: Reporter;
-  // eslint-disable-line @typescript-eslint/no-unused-vars
-  private readonly cache: GatsbyCache;
 
-  constructor({ token, notionVersion, reporter, cache }: ClientConfig) {
+  constructor({ token, notionVersion, reporter }: ClientConfig) {
     this.client = new Client({ auth: token, notionVersion });
     this.reporter = reporter;
-    this.cache = cache;
   }
 
   async waitAndLogWithNotionError(error: unknown) {
