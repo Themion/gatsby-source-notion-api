@@ -45,31 +45,38 @@ class NotionClient {
     this.cache = cache;
   }
 
-  async handleNotionError(error: unknown) {
-    if (!isNotionClientError(error)) this.reporter.panic('Unknwon Error has thrown!');
+  async waitAndLogWithNotionError(error: unknown) {
+    if (!isNotionClientError(error)) {
+      this.reporter.error('Unknwon Error has thrown!');
+      throw error;
+    }
+
     switch (error.name) {
       case 'APIResponseError':
         switch (error.code) {
           case APIErrorCode.RateLimited:
             const retryAfter = parseInt((error.headers as Headers).get('retry-after') ?? '60', 10)
-            console.warn(`API Rate Limit reached! retrying after ${Math.floor(retryAfter)} seconds...`)
+            this.reporter.warn(`API Rate Limit reached! retrying after ${Math.floor(retryAfter)} seconds...`)
             await wait(retryAfter * 1000);
-            break;
+            return;
           case APIErrorCode.InternalServerError:
           case APIErrorCode.ServiceUnavailable:
+            this.reporter.warn('Server-side error is thrown! retrying after 30 seconds...')
             await wait(1000 * 30);
-            console.warn('Server-side error is thrown! retrying after 30 seconds...')
-            break;
+            return;
           default:
-            this.reporter.panic(error.message);
+            this.reporter.error(error);
         }
         break;
       case 'RequestTimeoutError':
+        this.reporter.warn('Request Timeout error is thrown! retrying after 30 seconds...')
         await wait(1000 * 30);
-        break;
+        return;
       case 'UnknownHTTPResponseError':
-        this.reporter.panic(error.message);
+        this.reporter.error(error);
+        break;
     }
+    throw error;
   }
 
   private async fetchAll<T>(fetch: FetchNotionData<T>) {
@@ -83,7 +90,7 @@ class NotionClient {
         cursor = nextCursor;
       } while (cursor != null);
     } catch (error) {
-      await this.handleNotionError(error);
+      await this.waitAndLogWithNotionError(error);
     }
 
     return dataList;
