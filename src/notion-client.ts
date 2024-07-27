@@ -1,6 +1,7 @@
 import { APIErrorCode, Client, isNotionClientError } from '@notionhq/client';
 import {
   DatabaseObjectResponse,
+  GetDatabaseResponse,
   PageObjectResponse,
 } from '@notionhq/client/build/src/api-endpoints';
 import { GatsbyCache, NodePluginArgs, Reporter } from 'gatsby';
@@ -18,6 +19,7 @@ import {
 type ClientConfig = {
   token: string;
   notionVersion: string;
+  useCacheForDatabase: boolean;
 } & NodePluginArgs;
 
 type UpdatePageOption = {
@@ -33,17 +35,23 @@ type FetchNotionData<T> = (
 const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item is NotionAPIPage =>
   item.object === 'page';
 
+const isDatabaseObject = (
+  databaseStat: GetDatabaseResponse,
+): databaseStat is DatabaseObjectResponse => Object.keys(databaseStat).includes('last_edited_time');
+
 const getCacheKey = (type: CacheType, id: string) => `${NODE_TYPE}_${CACHE_PREFIX[type]}_${id}`;
 
 class NotionClient {
   private readonly client: Client;
   private readonly reporter: Reporter;
   private readonly cache: GatsbyCache;
+  private readonly useCacheForDatabase: boolean;
 
-  constructor({ token, notionVersion, reporter, cache }: ClientConfig) {
+  constructor({ token, notionVersion, useCacheForDatabase, reporter, cache }: ClientConfig) {
     this.client = new Client({ auth: token, notionVersion });
     this.reporter = reporter;
     this.cache = cache;
+    this.useCacheForDatabase = useCacheForDatabase;
   }
 
   async waitAndLogWithNotionError(error: unknown) {
@@ -110,18 +118,58 @@ class NotionClient {
 
   private async getPageFromCache(pageId: string, lastEditedTime: Date) {
     const pageFromCache = await this.getFromCache<Page>('page', pageId);
-    const isCacheHit =
-      pageFromCache !== null &&
-      new Date(pageFromCache.cachedTime).getTime() >= lastEditedTime.getTime();
 
-    if (isCacheHit) this.reporter.info(`Cache hit for page ${pageId}!`);
-    else this.reporter.warn(`Cache failed for page ${pageId}: refetching...`);
-
-    return isCacheHit ? pageFromCache.payload : null;
+    if (pageFromCache === null) {
+      this.reporter.warn(`Cache failed for page ${pageId}!`);
+      return null;
+    } else if (new Date(pageFromCache.cachedTime).getTime() < lastEditedTime.getTime()) {
+      this.reporter.warn(`Page ${pageId} is updated!`);
+      return null;
+    } else {
+      this.reporter.info(`Cache hit for page ${pageId}!`);
+      return pageFromCache.payload;
+    }
   }
 
   private async setPageToCache(page: Page) {
     return this.setToCache('page', page.id, page);
+  }
+
+  private async getPagesFromCache(databaseId: string): Promise<Page[] | null> {
+    const pageIdsFromCache = await this.getFromCache<string[]>('database', databaseId);
+    const databaseStat = await this.client.databases.retrieve({ database_id: databaseId });
+
+    if (!isDatabaseObject(databaseStat)) {
+      this.reporter.error(`Failed to fetch info of database ${databaseId}!`);
+      return null;
+    }
+    const lastEditedTime = new Date(databaseStat.last_edited_time);
+
+    if (pageIdsFromCache === null) {
+      this.reporter.warn(`Cache failed for database ${databaseId}!`);
+      return null;
+    }
+    if (new Date(pageIdsFromCache.cachedTime).getTime() < lastEditedTime.getTime()) {
+      this.reporter.warn(`Database ${databaseId} is updated!`);
+      return null;
+    }
+
+    return Promise.all(
+      pageIdsFromCache.payload.map((pageId) => this.getPageFromCache(pageId, lastEditedTime)),
+    )
+      .then((list) => {
+        this.reporter.info(`Cache hit for database ${databaseId}!`);
+        return list.filter((item) => item !== null);
+      })
+      .catch(() => {
+        this.reporter.info(`Cache failed for page in database ${databaseId}!`);
+        return null;
+      });
+  }
+
+  private async setPagesToCache(databaseId: string, pages: Page[]) {
+    const pageIds = pages.map(({ id }) => id);
+    return this.setToCache('database', databaseId, pageIds);
   }
 
   private getBlock(id: string): FetchNotionData<Block> {
@@ -192,7 +240,15 @@ class NotionClient {
   }
 
   async getPages(databaseId: string) {
-    return this.fetchAll(this.getPagesFromNotion(databaseId));
+    if (this.useCacheForDatabase) {
+      const pagesFromCache = await this.getPagesFromCache(databaseId);
+      if (pagesFromCache !== null) return pagesFromCache;
+    }
+    const pages = await this.fetchAll(this.getPagesFromNotion(databaseId));
+    if (this.useCacheForDatabase) {
+      this.setPagesToCache(databaseId, pages);
+    }
+    return pages;
   }
 
   async updatePageSlug({ pageId, key, value }: UpdatePageOption) {

@@ -16,6 +16,7 @@ export const importNotionSource = async (
     notionVersion = '2022-06-28',
     propsToFrontmatter = true,
     lowerTitleLevel = true,
+    useCacheForDatabase = false,
     keyConverter = ({ name }) => name.replaceAll(' ', '_'),
     valueConverter = ({ value }) => value,
     slugifier,
@@ -23,7 +24,12 @@ export const importNotionSource = async (
 ) => {
   const { actions, createContentDigest, createNodeId } = notionPluginArgs;
 
-  const notionClient = new NotionClient({ token, notionVersion, ...notionPluginArgs });
+  const notionClient = new NotionClient({
+    token,
+    notionVersion,
+    useCacheForDatabase,
+    ...notionPluginArgs,
+  });
   const getPageProperties = pageToProperties(valueConverter, keyConverter);
   const pages = await notionClient.getPages(databaseId);
 

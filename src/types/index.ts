@@ -119,7 +119,7 @@ export type Slugifier = (properties: Record<string, NormalizedValue>) => {
   value: string;
 };
 
-export type CacheType = 'page';
+export type CacheType = 'page' | 'database';
 
 export type Options = {
   token: string;
@@ -128,6 +128,7 @@ export type Options = {
   propsToFrontmatter: boolean;
   lowerTitleLevel: boolean;
   devServerRefreshInterval?: number;
+  useCacheForDatabase: boolean;
   keyConverter: KeyConverter;
   valueConverter: ValueConverter;
   slugifier?: Slugifier;
