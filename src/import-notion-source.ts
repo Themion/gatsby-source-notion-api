@@ -1,13 +1,12 @@
 import type { NodePluginArgs } from 'gatsby';
 import YAML from 'yaml';
+import { NODE_TYPE } from './constants';
 import NotionClient from './notion-client';
 import { pageToProperties } from './transformers/get-page-properties';
 import { getNotionPageTitle } from './transformers/get-page-title';
 import { notionBlockToMarkdown } from './transformers/notion-block-to-markdown';
 import type { NormalizedValue, Options } from './types';
 import { getPropertyContent } from './utils';
-
-const NOTION_NODE_TYPE = 'Notion';
 
 export const importNotionSource = async (
   notionPluginArgs: NodePluginArgs,
@@ -17,6 +16,7 @@ export const importNotionSource = async (
     notionVersion = '2022-06-28',
     propsToFrontmatter = true,
     lowerTitleLevel = true,
+    useCacheForDatabase = false,
     keyConverter = ({ name }) => name.replaceAll(' ', '_'),
     valueConverter = ({ value }) => value,
     slugifier,
@@ -24,7 +24,12 @@ export const importNotionSource = async (
 ) => {
   const { actions, createContentDigest, createNodeId } = notionPluginArgs;
 
-  const notionClient = new NotionClient({ token, notionVersion, ...notionPluginArgs });
+  const notionClient = new NotionClient({
+    token,
+    notionVersion,
+    useCacheForDatabase,
+    ...notionPluginArgs,
+  });
   const getPageProperties = pageToProperties(valueConverter, keyConverter);
   const pages = await notionClient.getPages(databaseId);
 
@@ -32,7 +37,7 @@ export const importNotionSource = async (
     if (!slugifier) return;
     const { key, value } = slugifier(properties);
     if (!!properties[key]) return;
-    const slug = await notionClient.updatePage({ pageId, key, value });
+    const slug = await notionClient.updatePageSlug({ pageId, key, value });
     if (slug === null) return;
     properties[key] = getPropertyContent(slug);
   };
@@ -49,7 +54,7 @@ export const importNotionSource = async (
     }
 
     actions.createNode({
-      id: createNodeId(`${NOTION_NODE_TYPE}-${databaseId}-${page.id}`),
+      id: createNodeId(`${NODE_TYPE}-${databaseId}-${page.id}`),
       title,
       properties,
       archived: page.archived,
@@ -61,7 +66,7 @@ export const importNotionSource = async (
       parent: null,
       children: [],
       internal: {
-        type: NOTION_NODE_TYPE,
+        type: NODE_TYPE,
         mediaType: 'text/markdown',
         content: markdown,
         contentDigest: createContentDigest(page),
