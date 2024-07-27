@@ -120,13 +120,12 @@ class NotionClient {
     const pageFromCache = await this.getFromCache<Page>('page', pageId);
 
     if (pageFromCache === null) {
-      this.reporter.warn(`Cache failed for page ${pageId}!`);
+      this.reporter.info(`Cache failed for page ${pageId}!`);
       return null;
     } else if (new Date(pageFromCache.cachedTime).getTime() < lastEditedTime.getTime()) {
-      this.reporter.warn(`Page ${pageId} is updated!`);
+      this.reporter.info(`Page ${pageId} is updated: refetching page...`);
       return null;
     } else {
-      this.reporter.info(`Cache hit for page ${pageId}!`);
       return pageFromCache.payload;
     }
   }
@@ -140,29 +139,28 @@ class NotionClient {
     const databaseStat = await this.client.databases.retrieve({ database_id: databaseId });
 
     if (!isDatabaseObject(databaseStat)) {
-      this.reporter.error(`Failed to fetch info of database ${databaseId}!`);
+      this.reporter.warn(`Failed to fetch info of database ${databaseId}!`);
       return null;
     }
     const lastEditedTime = new Date(databaseStat.last_edited_time);
 
     if (pageIdsFromCache === null) {
-      this.reporter.warn(`Cache failed for database ${databaseId}!`);
+      this.reporter.info(`Cache failed for database ${databaseId}!`);
       return null;
     }
     if (new Date(pageIdsFromCache.cachedTime).getTime() < lastEditedTime.getTime()) {
-      this.reporter.warn(`Database ${databaseId} is updated!`);
+      this.reporter.info(`Database ${databaseId} is updated: refetching database...`);
       return null;
     }
 
     return Promise.all(
       pageIdsFromCache.payload.map((pageId) => this.getPageFromCache(pageId, lastEditedTime)),
     )
-      .then((list) => {
-        this.reporter.info(`Cache hit for database ${databaseId}!`);
-        return list.filter((item) => item !== null);
-      })
+      .then((list) => list.filter((item) => item !== null))
       .catch(() => {
-        this.reporter.info(`Cache failed for page in database ${databaseId}!`);
+        this.reporter.info(
+          `Cache failed for page in database ${databaseId}: refetching database...`,
+        );
         return null;
       });
   }
