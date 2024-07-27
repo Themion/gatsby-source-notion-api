@@ -3,8 +3,9 @@ import {
   DatabaseObjectResponse,
   PageObjectResponse,
 } from '@notionhq/client/build/src/api-endpoints';
-import { NodePluginArgs, Reporter } from 'gatsby';
-import { Block, NotionAPIPage, Page } from './types';
+import { GatsbyCache, NodePluginArgs, Reporter } from 'gatsby';
+import { CACHE_PREFIX, NODE_TYPE } from './constants';
+import { Block, Cached, CacheType, NotionAPIPage, Page } from './types';
 import {
   getPromiseValue,
   isFulfilled,
@@ -32,13 +33,17 @@ type FetchNotionData<T> = (
 const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item is NotionAPIPage =>
   item.object === 'page';
 
+const getCacheKey = (type: CacheType, id: string) => `${NODE_TYPE}_${CACHE_PREFIX[type]}_${id}`;
+
 class NotionClient {
   private readonly client: Client;
   private readonly reporter: Reporter;
+  private readonly cache: GatsbyCache;
 
-  constructor({ token, notionVersion, reporter }: ClientConfig) {
+  constructor({ token, notionVersion, reporter, cache }: ClientConfig) {
     this.client = new Client({ auth: token, notionVersion });
     this.reporter = reporter;
+    this.cache = cache;
   }
 
   async waitAndLogWithNotionError(error: unknown) {
@@ -94,6 +99,31 @@ class NotionClient {
     return dataList;
   }
 
+  private async setToCache<T>(type: CacheType, id: string, payload: T) {
+    const cachedValue: Cached<T> = { payload, cachedTime: new Date().getTime() };
+    return (await this.cache.set(getCacheKey(type, id), cachedValue)) as Cached<T>;
+  }
+
+  private async getFromCache<T>(type: CacheType, id: string): Promise<Cached<T> | null> {
+    return ((await this.cache.get(getCacheKey(type, id))) as Cached<T> | undefined) ?? null;
+  }
+
+  private async getPageFromCache(pageId: string, lastEditedTime: Date) {
+    const pageFromCache = await this.getFromCache<Page>('page', pageId);
+    const isCacheHit =
+      pageFromCache !== null &&
+      new Date(pageFromCache.cachedTime).getTime() >= lastEditedTime.getTime();
+
+    if (isCacheHit) this.reporter.info(`Cache hit for page ${pageId}!`);
+    else this.reporter.warn(`Cache failed for page ${pageId}: refetching...`);
+
+    return isCacheHit ? pageFromCache.payload : null;
+  }
+
+  private async setPageToCache(page: Page) {
+    return this.setToCache('page', page.id, page);
+  }
+
   private getBlock(id: string): FetchNotionData<Block> {
     const fetch = async (cursor: string | null) => {
       const { results, next_cursor } = await this.client.blocks.children.list({
@@ -128,7 +158,17 @@ class NotionClient {
     return this.fetchAll(this.getBlock(id));
   }
 
-  private getPage(id: string): FetchNotionData<Page> {
+  private async getPageContent(result: PageObjectResponse): Promise<Page> {
+    const lastEditedTime = new Date(result.last_edited_time);
+    const pageFromCache = await this.getPageFromCache(result.id, lastEditedTime);
+    if (pageFromCache !== null) return pageFromCache;
+
+    const pageFromNotion: Page = { ...result, children: await this.getBlocks(result.id) };
+    this.setPageToCache(pageFromNotion);
+    return pageFromNotion;
+  }
+
+  private getPagesFromNotion(id: string): FetchNotionData<Page> {
     const fetch = async (cursor: string | null) => {
       const { results, next_cursor } = await this.client.databases.query({
         database_id: id,
@@ -139,12 +179,7 @@ class NotionClient {
         results
           .filter(isPageAccessible)
           .filter(isPageObject)
-          .map(
-            async (result): Promise<Page> => ({
-              ...result,
-              children: await this.getBlocks(result.id),
-            }),
-          ),
+          .map((result) => this.getPageContent(result)),
       );
 
       return {
@@ -157,7 +192,7 @@ class NotionClient {
   }
 
   async getPages(databaseId: string) {
-    return this.fetchAll(this.getPage(databaseId));
+    return this.fetchAll(this.getPagesFromNotion(databaseId));
   }
 
   async updatePageSlug({ pageId, key, value }: UpdatePageOption) {

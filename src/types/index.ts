@@ -12,6 +12,11 @@ export * from './notion';
  * Helper
  */
 
+export type Cached<T> = {
+  cachedTime: number;
+  payload: T;
+};
+
 export type EntityWithUserDetail<E extends NotionAPIBlock | NotionAPIDatabase | NotionAPIPage> =
   E extends any
     ? Omit<E, 'created_by' | 'last_edited_by'> & {
@@ -113,6 +118,8 @@ export type Slugifier = (properties: Record<string, NormalizedValue>) => {
   key: string;
   value: string;
 };
+
+export type CacheType = 'page';
 
 export type Options = {
   token: string;
