@@ -6,6 +6,7 @@ import {
 import { NodePluginArgs, Reporter } from 'gatsby';
 import { Block, NotionAPIPage, Page } from './types';
 import {
+  getPromiseValue,
   isFulfilled,
   isPageAccessible,
   isPropertyAccessible,
@@ -50,13 +51,15 @@ class NotionClient {
       case 'APIResponseError':
         switch (error.code) {
           case APIErrorCode.RateLimited:
-            const retryAfter = parseInt((error.headers as Headers).get('retry-after') ?? '60', 10)
-            this.reporter.warn(`API Rate Limit reached! retrying after ${Math.floor(retryAfter)} seconds...`)
+            const retryAfter = parseInt((error.headers as Headers).get('retry-after') ?? '60', 10);
+            this.reporter.warn(
+              `API Rate Limit reached! retrying after ${Math.floor(retryAfter)} seconds...`,
+            );
             await wait(retryAfter * 1000);
             return;
           case APIErrorCode.InternalServerError:
           case APIErrorCode.ServiceUnavailable:
-            this.reporter.warn('Server-side error is thrown! retrying after 30 seconds...')
+            this.reporter.warn('Server-side error is thrown! retrying after 30 seconds...');
             await wait(1000 * 30);
             return;
           default:
@@ -64,7 +67,7 @@ class NotionClient {
         }
         break;
       case 'RequestTimeoutError':
-        this.reporter.warn('Request Timeout error is thrown! retrying after 30 seconds...')
+        this.reporter.warn('Request Timeout error is thrown! retrying after 30 seconds...');
         await wait(1000 * 30);
         return;
       case 'UnknownHTTPResponseError':
@@ -113,7 +116,7 @@ class NotionClient {
       );
 
       return {
-        data: blocks.filter(isFulfilled).map(({ value }) => value),
+        data: blocks.filter(isFulfilled).map(getPromiseValue),
         nextCursor: next_cursor,
       };
     };
@@ -145,7 +148,7 @@ class NotionClient {
       );
 
       return {
-        data: fetchedPages.filter(isFulfilled).map(({ value }) => value),
+        data: fetchedPages.filter(isFulfilled).map(getPromiseValue),
         nextCursor: next_cursor,
       };
     };
@@ -157,7 +160,7 @@ class NotionClient {
     return this.fetchAll(this.getPage(databaseId));
   }
 
-  async updatePage({ pageId, key, value }: UpdatePageOption) {
+  async updatePageSlug({ pageId, key, value }: UpdatePageOption) {
     try {
       const result = await this.client.pages.update({
         page_id: pageId,

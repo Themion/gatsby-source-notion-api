@@ -32,7 +32,7 @@ export const importNotionSource = async (
     if (!slugifier) return;
     const { key, value } = slugifier(properties);
     if (!!properties[key]) return;
-    const slug = await notionClient.updatePage({ pageId, key, value });
+    const slug = await notionClient.updatePageSlug({ pageId, key, value });
     if (slug === null) return;
     properties[key] = getPropertyContent(slug);
   };
