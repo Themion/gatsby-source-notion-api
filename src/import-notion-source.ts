@@ -1,13 +1,12 @@
 import type { NodePluginArgs } from 'gatsby';
 import YAML from 'yaml';
+import { NODE_TYPE } from './constants';
 import NotionClient from './notion-client';
 import { pageToProperties } from './transformers/get-page-properties';
 import { getNotionPageTitle } from './transformers/get-page-title';
 import { notionBlockToMarkdown } from './transformers/notion-block-to-markdown';
 import type { NormalizedValue, Options } from './types';
 import { getPropertyContent } from './utils';
-
-const NOTION_NODE_TYPE = 'Notion';
 
 export const importNotionSource = async (
   notionPluginArgs: NodePluginArgs,
@@ -49,7 +48,7 @@ export const importNotionSource = async (
     }
 
     actions.createNode({
-      id: createNodeId(`${NOTION_NODE_TYPE}-${databaseId}-${page.id}`),
+      id: createNodeId(`${NODE_TYPE}-${databaseId}-${page.id}`),
       title,
       properties,
       archived: page.archived,
@@ -61,7 +60,7 @@ export const importNotionSource = async (
       parent: null,
       children: [],
       internal: {
-        type: NOTION_NODE_TYPE,
+        type: NODE_TYPE,
         mediaType: 'text/markdown',
         content: markdown,
         contentDigest: createContentDigest(page),
