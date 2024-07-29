@@ -26,6 +26,7 @@ type UpdatePageOption = {
   pageId: string;
   key: string;
   value: string;
+  url?: string;
 };
 
 type FetchNotionData<T> = (
@@ -249,7 +250,8 @@ class NotionClient {
     return pages;
   }
 
-  async updatePageSlug({ pageId, key, value }: UpdatePageOption) {
+  async updatePageSlug({ pageId, key, value, url }: UpdatePageOption) {
+    const link = url ? { url } : null;
     try {
       const result = await this.client.pages.update({
         page_id: pageId,
@@ -259,10 +261,7 @@ class NotionClient {
             rich_text: [
               {
                 type: 'text',
-                text: {
-                  content: value,
-                  link: null,
-                },
+                text: { content: value, link },
                 annotations: {
                   bold: false,
                   italic: false,

@@ -114,9 +114,17 @@ type ConverterArgument = {
 
 export type KeyConverter = (argument: ConverterArgument) => string | null;
 export type ValueConverter = (argument: ConverterArgument) => NormalizedValue;
-export type Slugifier = (properties: Record<string, NormalizedValue>) => {
-  key: string;
+export type SlugGenerator = (
+  properties: Record<string, NormalizedValue>,
+  page: Page,
+) => {
+  notionKey: string;
   value: string;
+  url?: string;
+};
+export type SlugOptions = {
+  key: string;
+  generator?: SlugGenerator;
 };
 
 export type CacheType = 'page' | 'database';
@@ -129,7 +137,7 @@ export type Options = {
   lowerTitleLevel: boolean;
   devServerRefreshInterval?: number;
   useCacheForDatabase: boolean;
+  slugOption?: SlugOptions;
   keyConverter: KeyConverter;
   valueConverter: ValueConverter;
-  slugifier?: Slugifier;
 };

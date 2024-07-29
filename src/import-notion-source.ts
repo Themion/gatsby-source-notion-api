@@ -1,4 +1,4 @@
-import type { NodePluginArgs } from 'gatsby';
+import type { Actions, NodePluginArgs, Reporter } from 'gatsby';
 import YAML from 'yaml';
 import { NODE_TYPE } from './constants';
 import NotionClient from './notion-client';
@@ -7,6 +7,42 @@ import { getNotionPageTitle } from './transformers/get-page-title';
 import { notionBlockToMarkdown } from './transformers/notion-block-to-markdown';
 import type { NormalizedValue, Options, Page } from './types';
 import { getPropertyContent } from './utils';
+
+const slugAppender = (
+  slugOption: Options['slugOption'],
+  reporter: Reporter,
+  notionClient: NotionClient,
+) => {
+  if (slugOption === undefined) return null;
+  const { key, generator } = slugOption;
+  if (!generator) return null;
+
+  return async (page: Page, properties: Record<string, NormalizedValue>) => {
+    const slugProperty = properties[key];
+    if (!!slugProperty) {
+      const valueType = typeof slugProperty;
+      if (valueType !== 'string') {
+        const message = `Property ${key} is defined as slug, but its value type is ${valueType}!`;
+        reporter.panicOnBuild(message);
+        return null;
+      } else return slugProperty;
+    }
+
+    const pageId = page.id;
+    const { notionKey, value, url } = generator(properties, page);
+    const result = await notionClient.updatePageSlug({ pageId, key: notionKey, value, url });
+    if (result === null) {
+      reporter.warn(`Setting slug for page ${pageId} has failed! Slug will be set to null.`);
+      return null;
+    }
+
+    page.properties[key] = result;
+    properties[key] = getPropertyContent(result);
+    reporter.info(`Updated slug for page ${pageId}!`);
+
+    return value;
+  };
+};
 
 export const importNotionSource = async (
   notionPluginArgs: NodePluginArgs,
@@ -17,41 +53,34 @@ export const importNotionSource = async (
     propsToFrontmatter = true,
     lowerTitleLevel = true,
     useCacheForDatabase = false,
+    slugOption,
     keyConverter = ({ name }) => name.replaceAll(' ', '_'),
     valueConverter = ({ value }) => value,
-    slugifier,
   }: Options,
 ) => {
-  const { actions, createContentDigest, createNodeId } = notionPluginArgs;
-
+  const { actions, createContentDigest, createNodeId, reporter } = notionPluginArgs;
   const notionClient = new NotionClient({
     token,
     notionVersion,
     useCacheForDatabase,
     ...notionPluginArgs,
   });
+
+  const appendSlug = slugAppender(slugOption, reporter, notionClient);
+
   const getPageProperties = pageToProperties(valueConverter, keyConverter);
   const pages = await notionClient.getPages(databaseId);
-
-  const appendSlug = async (pageId: string, page: Page, properties: Record<string, NormalizedValue>) => {
-    if (!slugifier) return;
-    const { key, value } = slugifier(properties);
-    if (!!page.properties[key]) return;
-    const slug = await notionClient.updatePageSlug({ pageId, key, value });
-    if (slug === null) return;
-    properties[key] = getPropertyContent(slug);
-  };
 
   pages.forEach(async (page) => {
     const title = getNotionPageTitle(page);
     const properties = getPageProperties(page);
     let markdown = notionBlockToMarkdown(page, lowerTitleLevel);
 
-    await appendSlug(page.id, page, properties);
-
     if (propsToFrontmatter) {
       markdown = '---\n'.concat(YAML.stringify(properties)).concat('\n---\n\n').concat(markdown);
     }
+
+    const slug = appendSlug !== null ? await appendSlug(page, properties) : null;
 
     actions.createNode({
       id: createNodeId(`${NODE_TYPE}-${databaseId}-${page.id}`),
@@ -64,6 +93,7 @@ export const importNotionSource = async (
       raw: page,
       json: JSON.stringify(page),
       parent: null,
+      slug,
       children: [],
       internal: {
         type: NODE_TYPE,
