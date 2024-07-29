@@ -1,3 +1,6 @@
+import { NODE_TYPE, CACHE_PREFIX } from '../constants';
+import { CacheType } from '../types';
+
 export * from './block';
 export * from './property';
 
@@ -9,3 +12,6 @@ export const getPromiseValue = <T>({ value }: PromiseFulfilledResult<T>): T => v
 
 export const wait = (millisecond: number) =>
   new Promise((resolve) => setTimeout(resolve, millisecond));
+
+export const getCacheKey = (type: CacheType, id: string) =>
+  `${NODE_TYPE}_${CACHE_PREFIX[type]}_${id}`;

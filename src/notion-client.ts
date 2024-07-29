@@ -3,11 +3,12 @@ import {
   DatabaseObjectResponse,
   GetDatabaseResponse,
   PageObjectResponse,
+  RichTextItemResponse,
 } from '@notionhq/client/build/src/api-endpoints';
 import { GatsbyCache, NodePluginArgs, Reporter } from 'gatsby';
-import { CACHE_PREFIX, NODE_TYPE } from './constants';
 import { Block, Cached, CacheType, NotionAPIPage, Page } from './types';
 import {
+  getCacheKey,
   getPromiseValue,
   isFulfilled,
   isPageAccessible,
@@ -26,6 +27,7 @@ type UpdatePageOption = {
   pageId: string;
   key: string;
   value: string;
+  url?: string;
 };
 
 type FetchNotionData<T> = (
@@ -38,8 +40,6 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
 const isDatabaseObject = (
   databaseStat: GetDatabaseResponse,
 ): databaseStat is DatabaseObjectResponse => Object.keys(databaseStat).includes('last_edited_time');
-
-const getCacheKey = (type: CacheType, id: string) => `${NODE_TYPE}_${CACHE_PREFIX[type]}_${id}`;
 
 class NotionClient {
   private readonly client: Client;
@@ -90,19 +90,25 @@ class NotionClient {
     throw error;
   }
 
+  private async fetchWithErrorHandler<T>(fetch: () => T) {
+    do {
+      try {
+        return fetch();
+      } catch (error) {
+        await this.waitAndLogWithNotionError(error);
+      }
+    } while (true);
+  }
+
   private async fetchAll<T>(fetch: FetchNotionData<T>) {
     const dataList: T[] = [];
     let cursor: string | null = null;
 
-    try {
-      do {
-        const { nextCursor, data } = await fetch(cursor);
-        dataList.push(...data);
-        cursor = nextCursor;
-      } while (cursor != null);
-    } catch (error) {
-      await this.waitAndLogWithNotionError(error);
-    }
+    do {
+      const { nextCursor, data } = await this.fetchWithErrorHandler(() => fetch(cursor));
+      dataList.push(...data);
+      cursor = nextCursor;
+    } while (cursor != null);
 
     return dataList;
   }
@@ -249,9 +255,11 @@ class NotionClient {
     return pages;
   }
 
-  async updatePageSlug({ pageId, key, value }: UpdatePageOption) {
-    try {
-      const result = await this.client.pages.update({
+  async updatePageSlug({ pageId, key, value, url }: UpdatePageOption) {
+    const link = url ? { url } : null;
+
+    const fetch = async () => {
+      const updateResult = await this.client.pages.update({
         page_id: pageId,
         properties: {
           [key]: {
@@ -259,10 +267,7 @@ class NotionClient {
             rich_text: [
               {
                 type: 'text',
-                text: {
-                  content: value,
-                  link: null,
-                },
+                text: { content: value, link },
                 annotations: {
                   bold: false,
                   italic: false,
@@ -277,10 +282,10 @@ class NotionClient {
         },
       });
 
-      return isPageAccessible(result) ? result.properties[key] : null;
-    } catch {
-      return null;
-    }
+      return isPageAccessible(updateResult) ? updateResult.properties[key] : null;
+    };
+
+    return this.fetchWithErrorHandler(fetch.bind(this));
   }
 }
 
