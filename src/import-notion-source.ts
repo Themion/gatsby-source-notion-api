@@ -77,13 +77,13 @@ export const importNotionSource = async (notionPluginArgs: NodePluginArgs, optio
   pages.forEach(async (page) => {
     const title = getNotionPageTitle(page);
     const properties = getPageProperties(page);
+    const slug = appendSlug !== null ? await appendSlug(page, properties) : null;
+
     let markdown = notionBlockToMarkdown(page, lowerTitleLevel);
 
     if (propsToFrontmatter) {
       markdown = '---\n'.concat(YAML.stringify(properties)).concat('\n---\n\n').concat(markdown);
     }
-
-    const slug = appendSlug !== null ? await appendSlug(page, properties) : null;
 
     actions.createNode({
       id: createNodeId(`${NODE_TYPE}-${databaseId}-${page.id}`),
