@@ -3,11 +3,12 @@ import {
   DatabaseObjectResponse,
   GetDatabaseResponse,
   PageObjectResponse,
+  RichTextItemResponse,
 } from '@notionhq/client/build/src/api-endpoints';
 import { GatsbyCache, NodePluginArgs, Reporter } from 'gatsby';
-import { CACHE_PREFIX, NODE_TYPE } from './constants';
 import { Block, Cached, CacheType, NotionAPIPage, Page } from './types';
 import {
+  getCacheKey,
   getPromiseValue,
   isFulfilled,
   isPageAccessible,
@@ -39,8 +40,6 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
 const isDatabaseObject = (
   databaseStat: GetDatabaseResponse,
 ): databaseStat is DatabaseObjectResponse => Object.keys(databaseStat).includes('last_edited_time');
-
-const getCacheKey = (type: CacheType, id: string) => `${NODE_TYPE}_${CACHE_PREFIX[type]}_${id}`;
 
 class NotionClient {
   private readonly client: Client;
@@ -252,8 +251,9 @@ class NotionClient {
 
   async updatePageSlug({ pageId, key, value, url }: UpdatePageOption) {
     const link = url ? { url } : null;
-    try {
-      const result = await this.client.pages.update({
+
+    const fetch = async () => {
+      const updateResult = await this.client.pages.update({
         page_id: pageId,
         properties: {
           [key]: {
@@ -276,10 +276,14 @@ class NotionClient {
         },
       });
 
-      return isPageAccessible(result) ? result.properties[key] : null;
-    } catch {
-      return null;
-    }
+      return {
+        data: [isPageAccessible(updateResult) ? updateResult.properties[key] : null],
+        nextCursor: null,
+      };
+    };
+
+    const result = await this.fetchAll(fetch.bind(this));
+    return result[0];
   }
 }
 
