@@ -137,7 +137,7 @@ export type Options = {
   lowerTitleLevel: boolean;
   devServerRefreshInterval?: number;
   useCacheForDatabase: boolean;
-  slugOption?: SlugOptions;
+  slugOptions?: SlugOptions;
   keyConverter: KeyConverter;
   valueConverter: ValueConverter;
 };

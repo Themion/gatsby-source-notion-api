@@ -1,6 +1,6 @@
 import { CacheType } from '../types';
 
-const NODE_TYPE = 'NOTION';
+const NODE_TYPE = 'Notion';
 const CACHE_PREFIX: Record<CacheType, string> = {
   database: 'DATABASE',
   page: 'PAGE',
