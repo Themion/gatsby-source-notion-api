@@ -90,19 +90,25 @@ class NotionClient {
     throw error;
   }
 
+  private async fetchWithErrorHandler<T>(fetch: () => T) {
+    do {
+      try {
+        return fetch();
+      } catch (error) {
+        await this.waitAndLogWithNotionError(error);
+      }
+    } while (true);
+  }
+
   private async fetchAll<T>(fetch: FetchNotionData<T>) {
     const dataList: T[] = [];
     let cursor: string | null = null;
 
-    try {
-      do {
-        const { nextCursor, data } = await fetch(cursor);
-        dataList.push(...data);
-        cursor = nextCursor;
-      } while (cursor != null);
-    } catch (error) {
-      await this.waitAndLogWithNotionError(error);
-    }
+    do {
+      const { nextCursor, data } = await this.fetchWithErrorHandler(() => fetch(cursor));
+      dataList.push(...data);
+      cursor = nextCursor;
+    } while (cursor != null);
 
     return dataList;
   }
@@ -276,14 +282,10 @@ class NotionClient {
         },
       });
 
-      return {
-        data: [isPageAccessible(updateResult) ? updateResult.properties[key] : null],
-        nextCursor: null,
-      };
+      return isPageAccessible(updateResult) ? updateResult.properties[key] : null;
     };
 
-    const result = await this.fetchAll(fetch.bind(this));
-    return result[0];
+    return this.fetchWithErrorHandler(fetch.bind(this));
   }
 }
 
