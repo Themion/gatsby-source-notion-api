@@ -5,7 +5,7 @@ import NotionClient from './notion-client';
 import { pageToProperties } from './transformers/get-page-properties';
 import { getNotionPageTitle } from './transformers/get-page-title';
 import { notionBlockToMarkdown } from './transformers/notion-block-to-markdown';
-import type { NormalizedValue, Options } from './types';
+import type { NormalizedValue, Options, Page } from './types';
 import { getPropertyContent } from './utils';
 
 export const importNotionSource = async (
@@ -33,10 +33,10 @@ export const importNotionSource = async (
   const getPageProperties = pageToProperties(valueConverter, keyConverter);
   const pages = await notionClient.getPages(databaseId);
 
-  const appendSlug = async (pageId: string, properties: Record<string, NormalizedValue>) => {
+  const appendSlug = async (pageId: string, page: Page, properties: Record<string, NormalizedValue>) => {
     if (!slugifier) return;
     const { key, value } = slugifier(properties);
-    if (!!properties[key]) return;
+    if (!!page.properties[key]) return;
     const slug = await notionClient.updatePageSlug({ pageId, key, value });
     if (slug === null) return;
     properties[key] = getPropertyContent(slug);
@@ -47,7 +47,7 @@ export const importNotionSource = async (
     const properties = getPageProperties(page);
     let markdown = notionBlockToMarkdown(page, lowerTitleLevel);
 
-    await appendSlug(page.id, properties);
+    await appendSlug(page.id, page, properties);
 
     if (propsToFrontmatter) {
       markdown = '---\n'.concat(YAML.stringify(properties)).concat('\n---\n\n').concat(markdown);
