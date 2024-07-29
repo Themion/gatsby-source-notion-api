@@ -6,16 +6,17 @@ import { pageToProperties } from './transformers/get-page-properties';
 import { getNotionPageTitle } from './transformers/get-page-title';
 import { notionBlockToMarkdown } from './transformers/notion-block-to-markdown';
 import type { NormalizedValue, Options, Page } from './types';
-import { getPropertyContent } from './utils';
+import { getCacheKey, getPropertyContent } from './utils';
 
 const slugAppender = (
   slugOption: Options['slugOption'],
-  reporter: Reporter,
+  nodePluginArgs: NodePluginArgs,
   notionClient: NotionClient,
 ) => {
   if (slugOption === undefined) return null;
   const { key, generator } = slugOption;
   if (!generator) return null;
+  const { reporter, cache } = nodePluginArgs;
 
   return async (page: Page, properties: Record<string, NormalizedValue>) => {
     const slugProperty = properties[key];
@@ -29,6 +30,7 @@ const slugAppender = (
     }
 
     const pageId = page.id;
+    cache.del(getCacheKey('page', pageId));
     const { notionKey, value, url } = generator(properties, page);
     const result = await notionClient.updatePageSlug({ pageId, key: notionKey, value, url });
     if (result === null) {
@@ -58,7 +60,7 @@ export const importNotionSource = async (
     valueConverter = ({ value }) => value,
   }: Options,
 ) => {
-  const { actions, createContentDigest, createNodeId, reporter } = notionPluginArgs;
+  const { actions, createContentDigest, createNodeId } = notionPluginArgs;
   const notionClient = new NotionClient({
     token,
     notionVersion,
@@ -66,7 +68,7 @@ export const importNotionSource = async (
     ...notionPluginArgs,
   });
 
-  const appendSlug = slugAppender(slugOption, reporter, notionClient);
+  const appendSlug = slugAppender(slugOption, notionPluginArgs, notionClient);
 
   const getPageProperties = pageToProperties(valueConverter, keyConverter);
   const pages = await notionClient.getPages(databaseId);
