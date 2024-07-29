@@ -93,7 +93,7 @@ class NotionClient {
   private async fetchWithErrorHandler<T>(fetch: () => T) {
     do {
       try {
-        return fetch();
+        return await fetch();
       } catch (error) {
         await this.waitAndLogWithNotionError(error);
       }
