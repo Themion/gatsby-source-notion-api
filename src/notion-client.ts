@@ -142,7 +142,8 @@ class NotionClient {
 
   private async getPagesFromCache(databaseId: string): Promise<Page[] | null> {
     const pageIdsFromCache = await this.getFromCache<string[]>('database', databaseId);
-    const databaseStat = await this.client.databases.retrieve({ database_id: databaseId });
+    const fetch = async () => await this.client.databases.retrieve({ database_id: databaseId })
+    const databaseStat = await this.fetchWithErrorHandler(fetch.bind(this));
 
     if (!isDatabaseObject(databaseStat)) {
       this.reporter.warn(`Failed to fetch info of database ${databaseId}!`);
