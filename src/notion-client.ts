@@ -1,26 +1,29 @@
 import { APIErrorCode, Client, isNotionClientError } from '@notionhq/client';
 import {
   DatabaseObjectResponse,
-  GetDatabaseResponse,
   PageObjectResponse,
-  RichTextItemResponse,
 } from '@notionhq/client/build/src/api-endpoints';
 import { GatsbyCache, NodePluginArgs, Reporter } from 'gatsby';
-import { Block, Cached, CacheType, NotionAPIPage, Page } from './types';
+import {
+  Block,
+  Cached,
+  CacheType,
+  NormalizedValue,
+  NotionAPIPage,
+  Options,
+  Page,
+  SlugOptions,
+} from './types';
 import {
   getCacheKey,
   getPromiseValue,
+  getPropertyContent,
   isFulfilled,
   isPageAccessible,
   isPropertyAccessible,
   isPropertySupported,
   wait,
 } from './utils';
-
-type ClientConfig = {
-  token: string;
-  notionVersion: string;
-} & NodePluginArgs;
 
 type UpdatePageOption = {
   pageId: string;
@@ -38,13 +41,20 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
 
 class NotionClient {
   private readonly client: Client;
+  private readonly databaseId: string;
   private readonly reporter: Reporter;
   private readonly cache: GatsbyCache;
+  private readonly slugOptions: SlugOptions | null;
 
-  constructor({ token, notionVersion, reporter, cache }: ClientConfig) {
+  constructor(
+    { reporter, cache }: NodePluginArgs,
+    { token, notionVersion, databaseId, slugOptions }: Options,
+  ) {
     this.client = new Client({ auth: token, notionVersion });
+    this.databaseId = databaseId;
     this.reporter = reporter;
     this.cache = cache;
+    this.slugOptions = slugOptions ?? null;
   }
 
   async waitAndLogWithNotionError(error: unknown) {
@@ -107,7 +117,10 @@ class NotionClient {
   }
 
   private async setToCache<T>(type: CacheType, id: string, payload: T) {
-    const cachedValue: Cached<T> = { payload, cachedTime: new Date().getTime() };
+    const cachedDate = new Date();
+    cachedDate.setMilliseconds(0);
+    cachedDate.setSeconds(0);
+    const cachedValue: Cached<T> = { payload, cachedTime: cachedDate.getTime() };
     return (await this.cache.set(getCacheKey(type, id), cachedValue)) as Cached<T>;
   }
 
@@ -121,7 +134,7 @@ class NotionClient {
     if (pageFromCache === null) {
       this.reporter.info(`Cache failed for page ${pageId}!`);
       return null;
-    } else if (new Date(pageFromCache.cachedTime).getTime() < lastEditedTime.getTime()) {
+    } else if (pageFromCache.cachedTime <= lastEditedTime.getTime()) {
       this.reporter.info(`Page ${pageId} is updated: refetching page...`);
       return null;
     } else {
@@ -177,10 +190,10 @@ class NotionClient {
     return pageFromNotion;
   }
 
-  private getPagesFromNotion(id: string): FetchNotionData<Page> {
+  private getPagesFromNotion(): FetchNotionData<Page> {
     const fetch = async (cursor: string | null) => {
       const { results, next_cursor } = await this.client.databases.query({
-        database_id: id,
+        database_id: this.databaseId,
         start_cursor: cursor ?? undefined,
       });
 
@@ -200,11 +213,11 @@ class NotionClient {
     return fetch.bind(this);
   }
 
-  async getPages(databaseId: string): Promise<Page[]> {
-    return await this.fetchAll(this.getPagesFromNotion(databaseId));
+  async getPages(): Promise<Page[]> {
+    return await this.fetchAll(this.getPagesFromNotion());
   }
 
-  async updatePageSlug({ pageId, key, value, url }: UpdatePageOption) {
+  private async updatePageSlug({ pageId, key, value, url }: UpdatePageOption) {
     const link = url ? { url } : null;
 
     const fetch = async () => {
@@ -235,6 +248,38 @@ class NotionClient {
     };
 
     return this.fetchWithErrorHandler(fetch.bind(this));
+  }
+
+  async appendSlug(page: Page, properties: Record<string, NormalizedValue>) {
+    if (!this.slugOptions || !this.slugOptions.generator) return null;
+    const { key, generator } = this.slugOptions;
+
+    const slugProperty = properties[key];
+    const valueType = typeof slugProperty;
+
+    if (slugProperty === undefined) {
+      const message = `Property ${key} doesn't exist on database ${this.databaseId}!`;
+      this.reporter.panicOnBuild(message);
+      return null;
+    } else if (valueType !== 'string') {
+      const message = `Property ${key} is defined as slug, but its value type is ${valueType}!`;
+      this.reporter.panicOnBuild(message);
+      return null;
+    } else if (slugProperty !== '') return slugProperty;
+
+    const pageId = page.id;
+    const { notionKey, value, url } = generator(properties, page);
+    const result = await this.updatePageSlug({ pageId, key: notionKey, value, url });
+    if (result === null) {
+      this.reporter.warn(`Setting slug for page ${pageId} has failed! Slug will be set to null.`);
+      return null;
+    }
+
+    page.properties[notionKey] = result;
+    properties[key] = getPropertyContent(result);
+    this.reporter.info(`Updated slug for page ${pageId}!`);
+
+    return value;
   }
 }
 
