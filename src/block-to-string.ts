@@ -80,25 +80,29 @@ const timeTag = (dateString: string) => `<time datetime="${dateString}">${dateSt
 const getRichTextContent = (block: RichTextItemResponse): string => {
   switch (block.type) {
     case 'equation':
-      return block.equation.expression;
+      return block.equation.expression.replaceAll('\n', '');
     case 'mention':
       if (block.mention.type === 'date') {
         const { start, end } = block.mention.date;
         return end !== null ? `${timeTag(start)} ~ ${timeTag(end)}` : timeTag(start);
       }
     default:
-      return block.plain_text;
+      return block.plain_text.replaceAll('\n', '<br>');
   }
 };
 
-export const blockToString = (textBlocks: RichTextItemResponse[]): string =>
-  textBlocks.reduce((text, textBlock) => {
-    const data: TextInfo = {
-      ...textBlock.annotations,
-      equation: textBlock.type === 'equation',
-      link: textBlock.type === 'text' ? textBlock.text.link : null,
-      content: getRichTextContent(textBlock).replaceAll('\n', '<br>'),
-    };
+const getRichTextHtml = (textBlock: RichTextItemResponse): string => {
+  const data: TextInfo = {
+    ...textBlock.annotations,
+    equation: textBlock.type === 'equation',
+    link: textBlock.type === 'text' ? textBlock.text.link : null,
+    content: getRichTextContent(textBlock),
+  };
 
-    return text.concat(stylize(data).content);
-  }, '');
+  return stylize(data).content;
+};
+
+export const blockToString = (textBlocks: RichTextItemResponse[]): string => {
+  if (textBlocks.length === 0) return '<br>';
+  return textBlocks.map(getRichTextHtml).join('');
+};
