@@ -12,7 +12,7 @@ export const importNotionSource = async (notionPluginArgs: NodePluginArgs, optio
   const {
     databaseId,
     propsToFrontmatter = true,
-    lowerTitleLevel = false,
+    lowerTitleLevel = true,
     keyConverter = ({ name }) => name.replaceAll(' ', '_'),
     valueConverter = ({ value }) => value,
   } = options;
