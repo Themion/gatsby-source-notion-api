@@ -117,12 +117,11 @@ class NotionClient {
   }
 
   private async setToCache<T>(type: CacheType, id: string, payload: T) {
-    const cachedValue: Cached<T> = { payload, cachedTime: new Date().getTime() };
+    const cachedDate = new Date();
+    cachedDate.setMilliseconds(0);
+    cachedDate.setSeconds(0);
+    const cachedValue: Cached<T> = { payload, cachedTime: cachedDate.getTime() };
     return (await this.cache.set(getCacheKey(type, id), cachedValue)) as Cached<T>;
-  }
-
-  private async deleteCache(type: CacheType, id: string) {
-    return await this.cache.del(getCacheKey(type, id));
   }
 
   private async getFromCache<T>(type: CacheType, id: string): Promise<Cached<T> | null> {
@@ -135,7 +134,7 @@ class NotionClient {
     if (pageFromCache === null) {
       this.reporter.info(`Cache failed for page ${pageId}!`);
       return null;
-    } else if (new Date(pageFromCache.cachedTime).getTime() < lastEditedTime.getTime()) {
+    } else if (pageFromCache.cachedTime <= lastEditedTime.getTime()) {
       this.reporter.info(`Page ${pageId} is updated: refetching page...`);
       return null;
     } else {
@@ -269,7 +268,6 @@ class NotionClient {
     } else if (slugProperty !== '') return slugProperty;
 
     const pageId = page.id;
-    this.deleteCache('page', pageId);
     const { notionKey, value, url } = generator(properties, page);
     const result = await this.updatePageSlug({ pageId, key: notionKey, value, url });
     if (result === null) {
