@@ -20,7 +20,6 @@ import {
 type ClientConfig = {
   token: string;
   notionVersion: string;
-  useCacheForDatabase: boolean;
 } & NodePluginArgs;
 
 type UpdatePageOption = {
@@ -45,13 +44,11 @@ class NotionClient {
   private readonly client: Client;
   private readonly reporter: Reporter;
   private readonly cache: GatsbyCache;
-  private readonly useCacheForDatabase: boolean;
 
-  constructor({ token, notionVersion, useCacheForDatabase, reporter, cache }: ClientConfig) {
+  constructor({ token, notionVersion, reporter, cache }: ClientConfig) {
     this.client = new Client({ auth: token, notionVersion });
     this.reporter = reporter;
     this.cache = cache;
-    this.useCacheForDatabase = useCacheForDatabase;
   }
 
   async waitAndLogWithNotionError(error: unknown) {
@@ -140,43 +137,6 @@ class NotionClient {
     return this.setToCache('page', page.id, page);
   }
 
-  private async getPagesFromCache(databaseId: string): Promise<Page[] | null> {
-    const pageIdsFromCache = await this.getFromCache<string[]>('database', databaseId);
-    const fetch = async () => await this.client.databases.retrieve({ database_id: databaseId })
-    const databaseStat = await this.fetchWithErrorHandler(fetch.bind(this));
-
-    if (!isDatabaseObject(databaseStat)) {
-      this.reporter.warn(`Failed to fetch info of database ${databaseId}!`);
-      return null;
-    }
-    const lastEditedTime = new Date(databaseStat.last_edited_time);
-
-    if (pageIdsFromCache === null) {
-      this.reporter.info(`Cache failed for database ${databaseId}!`);
-      return null;
-    }
-    if (new Date(pageIdsFromCache.cachedTime).getTime() < lastEditedTime.getTime()) {
-      this.reporter.info(`Database ${databaseId} is updated: refetching database...`);
-      return null;
-    }
-
-    return Promise.all(
-      pageIdsFromCache.payload.map((pageId) => this.getPageFromCache(pageId, lastEditedTime)),
-    )
-      .then((list) => list.filter((item) => item !== null))
-      .catch(() => {
-        this.reporter.info(
-          `Cache failed for page in database ${databaseId}: refetching database...`,
-        );
-        return null;
-      });
-  }
-
-  private async setPagesToCache(databaseId: string, pages: Page[]) {
-    const pageIds = pages.map(({ id }) => id);
-    return this.setToCache('database', databaseId, pageIds);
-  }
-
   private getBlock(id: string): FetchNotionData<Block> {
     const fetch = async (cursor: string | null) => {
       const { results, next_cursor } = await this.client.blocks.children.list({
@@ -244,16 +204,8 @@ class NotionClient {
     return fetch.bind(this);
   }
 
-  async getPages(databaseId: string) {
-    if (this.useCacheForDatabase) {
-      const pagesFromCache = await this.getPagesFromCache(databaseId);
-      if (pagesFromCache !== null) return pagesFromCache;
-    }
-    const pages = await this.fetchAll(this.getPagesFromNotion(databaseId));
-    if (this.useCacheForDatabase) {
-      this.setPagesToCache(databaseId, pages);
-    }
-    return pages;
+  async getPages(databaseId: string): Promise<Page[]> {
+    return await this.fetchAll(this.getPagesFromNotion(databaseId));
   }
 
   async updatePageSlug({ pageId, key, value, url }: UpdatePageOption) {
