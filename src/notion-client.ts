@@ -36,10 +36,6 @@ type FetchNotionData<T> = (
 const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item is NotionAPIPage =>
   item.object === 'page';
 
-const isDatabaseObject = (
-  databaseStat: GetDatabaseResponse,
-): databaseStat is DatabaseObjectResponse => Object.keys(databaseStat).includes('last_edited_time');
-
 class NotionClient {
   private readonly client: Client;
   private readonly reporter: Reporter;
