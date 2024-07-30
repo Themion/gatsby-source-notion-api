@@ -21,6 +21,7 @@ const notionSourceOption = {
   devServerRefreshInterval: 10000,
   keyConverter: ({ type, name }) => {
     if (type === "people") return "person"
+    if (name === "slug_temp") return "slug"
     return name
   },
   valueConverter: ({ type, value }) => {
@@ -36,10 +37,13 @@ const notionSourceOption = {
         return value
     }
   },
-  slugifier: ({ name }) => ({
+  slugOptions: {
     key: "slug",
-    value: slugify(name).toLowerCase(),
-  }),
+    generator: ({ name }) => ({
+      notionKey: "slug_temp",
+      value: slugify(name).toLowerCase(),
+    }),
+  },
 }
 
 module.exports = {

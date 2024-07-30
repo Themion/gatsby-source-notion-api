@@ -10,6 +10,7 @@ const richTextToCode = (blockList: RichTextItemResponse[], slot: string) =>
 const childBlockToHtml = (slot: string) => (childBlock: Extract<Block, { type: 'code' }>) => {
   const code = richTextToCode(childBlock.code.rich_text, slot);
   switch (childBlock.code.language) {
+    case 'markdown':
     case 'html':
       return code;
     case 'css':
