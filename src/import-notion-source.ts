@@ -58,15 +58,13 @@ export const importNotionSource = async (notionPluginArgs: NodePluginArgs, optio
     databaseId,
     notionVersion = '2022-06-28',
     propsToFrontmatter = true,
-    lowerTitleLevel = true,
-    useCacheForDatabase = false,
+    lowerTitleLevel = false,
     keyConverter = ({ name }) => name.replaceAll(' ', '_'),
     valueConverter = ({ value }) => value,
   } = options;
   const notionClient = new NotionClient({
     token,
     notionVersion,
-    useCacheForDatabase,
     ...notionPluginArgs,
   });
 

@@ -136,7 +136,6 @@ export type Options = {
   propsToFrontmatter: boolean;
   lowerTitleLevel: boolean;
   devServerRefreshInterval?: number;
-  useCacheForDatabase: boolean;
   slugOptions?: SlugOptions;
   keyConverter: KeyConverter;
   valueConverter: ValueConverter;
