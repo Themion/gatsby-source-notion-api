@@ -1,4 +1,4 @@
-import { CacheType } from '../types';
+import { CacheType } from '~/types';
 
 const NODE_TYPE = 'Notion';
 const CACHE_PREFIX: Record<CacheType, string> = {

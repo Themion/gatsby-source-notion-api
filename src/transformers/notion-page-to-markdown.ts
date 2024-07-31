@@ -1,7 +1,7 @@
 import { RichTextItemResponse } from '@notionhq/client/build/src/api-endpoints';
-import { blockToString } from '../block-to-string';
-import type { Block, Page } from '../types';
-import { getBlockProperty } from '../utils';
+import { blockToString } from '~/block-to-string';
+import type { Block, Page } from '~/types';
+import { getBlockProperty } from '~/utils';
 import { childPageToHtml } from './child-page-to-html';
 import { getYoutubeUrl } from './get-youtube-url';
 

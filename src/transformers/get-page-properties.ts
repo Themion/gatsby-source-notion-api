@@ -1,5 +1,5 @@
-import type { KeyConverter, NormalizedValue, Page, ValueConverter } from '../types';
-import { getPropertyContent } from '../utils';
+import type { KeyConverter, NormalizedValue, Page, ValueConverter } from '~/types';
+import { getPropertyContent } from '~/utils';
 
 export const pageToProperties =
   (valueConverter: ValueConverter, keyConverter: KeyConverter) =>
