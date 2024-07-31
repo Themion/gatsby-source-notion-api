@@ -1,7 +1,7 @@
 import type { NodePluginArgs } from 'gatsby';
 import YAML from 'yaml';
+import NotionClient from '~/client';
 import { NODE_TYPE } from '~/constants';
-import NotionClient from '~/notion-client';
 import { pageToProperties } from '~/transformers/get-page-properties';
 import { getNotionPageTitle } from '~/transformers/get-page-title';
 import { notionPageToMarkdown } from '~/transformers/notion-page-to-markdown';
