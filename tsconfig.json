@@ -23,5 +23,5 @@
     }
   },
   "exclude": ["./e2e/*", "./lib/*"],
-  "include": ["./src/*", "src/client/notion-client.ts"]
+  "include": ["./src/*"]
 }
