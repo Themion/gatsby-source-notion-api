@@ -102,7 +102,5 @@ const getRichTextHtml = (textBlock: RichTextItemResponse): string => {
   return stylize(data).content;
 };
 
-export const blockToString = (textBlocks: RichTextItemResponse[]): string => {
-  if (textBlocks.length === 0) return '<br>';
-  return textBlocks.map(getRichTextHtml).join('');
-};
+export const blockToString = (textBlocks: RichTextItemResponse[]): string =>
+  textBlocks.map(getRichTextHtml).join('');
