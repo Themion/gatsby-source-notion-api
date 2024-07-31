@@ -13,7 +13,7 @@ import {
   Options,
   Page,
   SlugOptions,
-} from './types';
+} from '~/types';
 import {
   getCacheKey,
   getPromiseValue,
@@ -23,7 +23,7 @@ import {
   isPropertyAccessible,
   isPropertySupported,
   wait,
-} from './utils';
+} from '~/utils';
 
 type UpdatePageOption = {
   pageId: string;

@@ -1,11 +1,11 @@
 import type { NodePluginArgs } from 'gatsby';
 import YAML from 'yaml';
-import { NODE_TYPE } from './constants';
-import NotionClient from './notion-client';
-import { pageToProperties } from './transformers/get-page-properties';
-import { getNotionPageTitle } from './transformers/get-page-title';
-import { notionPageToMarkdown } from './transformers/notion-page-to-markdown';
-import type { Options } from './types';
+import { NODE_TYPE } from '~/constants';
+import NotionClient from '~/notion-client';
+import { pageToProperties } from '~/transformers/get-page-properties';
+import { getNotionPageTitle } from '~/transformers/get-page-title';
+import { notionPageToMarkdown } from '~/transformers/notion-page-to-markdown';
+import type { Options } from '~/types';
 
 export const importNotionSource = async (notionPluginArgs: NodePluginArgs, options: Options) => {
   const { actions, createContentDigest, createNodeId } = notionPluginArgs;

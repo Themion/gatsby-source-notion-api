@@ -1,6 +1,6 @@
 import type { GatsbyNode, PluginOptions } from 'gatsby';
-import { importNotionSource } from './import-notion-source';
-import type { Options } from './types';
+import { importNotionSource } from '~/import-notion-source';
+import type { Options } from '~/types';
 
 export const sourceNodes: GatsbyNode['sourceNodes'] = (args, options: PluginOptions & Options) =>
   importNotionSource(args, options);
@@ -10,28 +10,30 @@ export const onCreateDevServer: GatsbyNode['onCreateDevServer'] = (
   options: PluginOptions & Options,
 ) => {
   const { devServerRefreshInterval } = options;
-  const { reporter } = args
-  
+  const { reporter } = args;
+
   if (devServerRefreshInterval) {
     let intervalFlag = false;
-    
+
     const intervalFunc = () => {
       if (intervalFlag) {
-        reporter.warn('Refetch cancelled to prevent overriding previous fetch!')
+        reporter.warn('Refetch cancelled to prevent overriding previous fetch!');
         return;
       }
       intervalFlag = true;
 
-      const activity = reporter.activityTimer(`Refetching data from notion database ${options.databaseId}`)
-      activity.start()
+      const activity = reporter.activityTimer(
+        `Refetching data from notion database ${options.databaseId}`,
+      );
+      activity.start();
 
       importNotionSource(args, options)
         .catch(reporter.error)
         .finally(() => {
-          intervalFlag = false; 
+          intervalFlag = false;
           activity.end();
-        })
-    }
+        });
+    };
     setInterval(intervalFunc, devServerRefreshInterval);
   }
 };

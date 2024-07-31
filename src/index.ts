@@ -4,5 +4,5 @@ import type {
   SlugGenerator,
   SlugOptions,
   ValueConverter,
-} from './types';
+} from '~/types';
 export type { KeyConverter, NotionSourceOptions, SlugGenerator, SlugOptions, ValueConverter };

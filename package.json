@@ -6,7 +6,7 @@
     "format": "prettier --write *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "lint": "prettier -c *.{js,json,md} **/*.{js,json,md} **/**/*.{js,json,md}",
     "commit": "gitmoji --commit",
-    "build": "tsc",
+    "build": "tsc && pnpx tsc-alias",
     "release": "rm -rf ./lib && pnpm run build && npm publish --access=public"
   },
   "types": "./lib/index.d.ts",

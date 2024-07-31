@@ -1,4 +1,4 @@
-import type { Block } from '../types';
+import type { Block } from '~/types';
 export const getBlockProperty = (block: Block) => {
   switch (block.type) {
     case 'audio':

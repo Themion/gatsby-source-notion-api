@@ -1,5 +1,5 @@
-import { NODE_TYPE, CACHE_PREFIX } from '../constants';
-import { CacheType } from '../types';
+import { CACHE_PREFIX, NODE_TYPE } from '~/constants';
+import { CacheType } from '~/types';
 
 export * from './block';
 export * from './property';
