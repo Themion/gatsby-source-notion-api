@@ -84,7 +84,8 @@ const notionBlockToMarkdown = (
     case 'heading_3':
       const headingLevel = Number(block.type.split('_')[1]);
       const headingSymbol = (lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
-      return `${headingSymbol} ${blockMarkdown}`;
+      const headingContent = blockMarkdown === '' ? '<br>' : blockMarkdown;
+      return `${headingSymbol} ${headingContent}`;
     case 'image':
       const imageUrl =
         block.image.type == 'external' ? block.image.external.url : block.image.file.url;
@@ -92,7 +93,7 @@ const notionBlockToMarkdown = (
     case 'numbered_list_item':
       return `1. ${blockMarkdown}`;
     case 'paragraph':
-      return blockMarkdown;
+      return blockMarkdown === '' ? '<br>' : blockMarkdown;
     case 'quote':
       return `> ${blockMarkdown}`;
     case 'table':
