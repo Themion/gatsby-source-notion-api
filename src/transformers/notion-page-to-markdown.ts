@@ -35,19 +35,18 @@ const getBlockMarkdown = (block: Block): RichTextItemResponse[] => {
 };
 
 // Converts a notion block to a markdown string.
-export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: boolean): string => {
+const notionBlockToMarkdown = (
+  block: Block,
+  lowerTitleLevel: boolean,
+  parentBlock: Block | null = null,
+): string => {
   const childMarkdown =
-    block.object === 'page' || block.has_children === true
+    block.has_children === true
       ? block.children
-          .map((child) => notionBlockToMarkdown(child, lowerTitleLevel))
+          .map((child) => notionBlockToMarkdown(child, lowerTitleLevel, block))
           .join('\n\n')
           .trim()
       : '';
-
-  // If the block is a page, return the child content.
-  if (block.object === 'page') {
-    return childMarkdown;
-  }
 
   // Extract the remaining content of the block and combine it with its children.
   const blockMarkdown = blockToString(getBlockMarkdown(block)).trim();
@@ -68,7 +67,7 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
       if (block.has_children) return childPageToHtml(block);
       return '';
     case 'code':
-      `\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\`${childMarkdown}`;
+      return `\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\`${childMarkdown}`;
     case 'column':
       return `<div ${blockClass}>${childMarkdown}</div>`;
     case 'column_list':
@@ -96,6 +95,23 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
       return blockMarkdown;
     case 'quote':
       return `> ${blockMarkdown}`;
+    case 'table':
+      const tableContent = childMarkdown.replaceAll(/\n+/g, '\n');
+      const table = `<table>\n${tableContent}\n</table>`;
+      return table;
+    case 'table_row':
+      if (parentBlock?.type !== 'table' || !parentBlock.has_children) return '';
+
+      const { has_row_header, has_column_header } = parentBlock.table;
+      const isHeaderRow = has_row_header && block.id === parentBlock.children[0].id;
+      const isHeaderColumn = (i: number) => has_column_header && i === 0;
+      const isHeaderCell = (i: number) => isHeaderRow || isHeaderColumn(i);
+
+      const cells = block.table_row.cells
+        .map(blockToString)
+        .map((cell, i) => (isHeaderCell(i) ? `<th>${cell}</th>` : `<td>${cell}</td>`));
+
+      return `<tr>${cells.join('')}</tr>`;
     case 'to_do':
       return `- [${block.to_do.checked ? 'x' : ' '}] ${blockMarkdown}`;
     case 'toggle':
@@ -122,8 +138,14 @@ export const notionBlockToMarkdown = (block: Block | Page, lowerTitleLevel: bool
         `External video (${url}) is not supported yet: please upload video file directly or to youtube.`,
       );
 
-    // TODO: Add support for table, callouts, and files
+    // TODO: Add support for callouts, and files
     default:
       return notionBlockComment(block);
   }
 };
+
+export const notionPageToMarkdown = (page: Page, lowerTitleLevel: boolean) =>
+  page.children
+    .map((child) => notionBlockToMarkdown(child, lowerTitleLevel))
+    .join('\n\n')
+    .trim();

@@ -4,7 +4,7 @@ import { NODE_TYPE } from './constants';
 import NotionClient from './notion-client';
 import { pageToProperties } from './transformers/get-page-properties';
 import { getNotionPageTitle } from './transformers/get-page-title';
-import { notionBlockToMarkdown } from './transformers/notion-block-to-markdown';
+import { notionPageToMarkdown } from './transformers/notion-page-to-markdown';
 import type { Options } from './types';
 
 export const importNotionSource = async (notionPluginArgs: NodePluginArgs, options: Options) => {
@@ -27,7 +27,7 @@ export const importNotionSource = async (notionPluginArgs: NodePluginArgs, optio
     const properties = getPageProperties(page);
     const slug = await notionClient.appendSlug(page, properties);
 
-    let markdown = notionBlockToMarkdown(page, lowerTitleLevel);
+    let markdown = notionPageToMarkdown(page, lowerTitleLevel);
 
     if (propsToFrontmatter) {
       markdown = '---\n'.concat(YAML.stringify(properties)).concat('\n---\n\n').concat(markdown);
