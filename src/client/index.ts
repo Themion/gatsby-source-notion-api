@@ -1,13 +1,12 @@
-import { APIErrorCode, Client, isNotionClientError } from '@notionhq/client';
+import { Client } from '@notionhq/client';
 import {
   DatabaseObjectResponse,
   PageObjectResponse,
 } from '@notionhq/client/build/src/api-endpoints';
-import { GatsbyCache, NodePluginArgs, Reporter } from 'gatsby';
+import { NodePluginArgs, Reporter } from 'gatsby';
 import {
   Block,
-  Cached,
-  CacheType,
+  FetchNotionData,
   NormalizedValue,
   NotionAPIPage,
   Options,
@@ -15,15 +14,15 @@ import {
   SlugOptions,
 } from '~/types';
 import {
-  getCacheKey,
   getPromiseValue,
   getPropertyContent,
   isFulfilled,
   isPageAccessible,
   isPropertyAccessible,
   isPropertySupported,
-  wait,
 } from '~/utils';
+import CacheWrapper from './cache';
+import FetchWrapper from './fetch';
 
 type UpdatePageOption = {
   pageId: string;
@@ -32,118 +31,24 @@ type UpdatePageOption = {
   url?: string;
 };
 
-type FetchNotionData<T> = (
-  cursor: string | null,
-) => Promise<{ nextCursor: string | null; data: T[] }>;
-
 const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item is NotionAPIPage =>
   item.object === 'page';
 
 class NotionClient {
-  private readonly client: Client;
   private readonly databaseId: string;
   private readonly reporter: Reporter;
-  private readonly cache: GatsbyCache;
   private readonly slugOptions: SlugOptions | null;
 
   constructor(
     { reporter, cache }: NodePluginArgs,
     { token, notionVersion, databaseId, slugOptions }: Options,
+    private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
+    private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache),
+    private readonly client: Client = new Client({ auth: token, notionVersion }),
   ) {
-    this.client = new Client({ auth: token, notionVersion });
     this.databaseId = databaseId;
     this.reporter = reporter;
-    this.cache = cache;
     this.slugOptions = slugOptions ?? null;
-  }
-
-  async waitAndLogWithNotionError(error: unknown) {
-    if (!isNotionClientError(error)) {
-      this.reporter.error('Unknwon Error has thrown!');
-      throw error;
-    }
-
-    switch (error.name) {
-      case 'APIResponseError':
-        switch (error.code) {
-          case APIErrorCode.RateLimited:
-            const retryAfter = parseInt((error.headers as Headers).get('retry-after') ?? '60', 10);
-            this.reporter.warn(
-              `API Rate Limit reached! retrying after ${Math.floor(retryAfter)} seconds...`,
-            );
-            await wait(retryAfter * 1000);
-            return;
-          case APIErrorCode.InternalServerError:
-          case APIErrorCode.ServiceUnavailable:
-            this.reporter.warn('Server-side error is thrown! retrying after 30 seconds...');
-            await wait(1000 * 30);
-            return;
-          default:
-            this.reporter.error(error);
-        }
-        break;
-      case 'RequestTimeoutError':
-        this.reporter.warn('Request Timeout error is thrown! retrying after 30 seconds...');
-        await wait(1000 * 30);
-        return;
-      case 'UnknownHTTPResponseError':
-        this.reporter.error(error);
-        break;
-    }
-    throw error;
-  }
-
-  private async fetchWithErrorHandler<T>(fetch: () => T) {
-    do {
-      try {
-        return await fetch();
-      } catch (error) {
-        await this.waitAndLogWithNotionError(error);
-      }
-    } while (true);
-  }
-
-  private async fetchAll<T>(fetch: FetchNotionData<T>) {
-    const dataList: T[] = [];
-    let cursor: string | null = null;
-
-    do {
-      const { nextCursor, data } = await this.fetchWithErrorHandler(() => fetch(cursor));
-      dataList.push(...data);
-      cursor = nextCursor;
-    } while (cursor != null);
-
-    return dataList;
-  }
-
-  private async setToCache<T>(type: CacheType, id: string, payload: T) {
-    const cachedDate = new Date();
-    cachedDate.setMilliseconds(0);
-    cachedDate.setSeconds(0);
-    const cachedValue: Cached<T> = { payload, cachedTime: cachedDate.getTime() };
-    return (await this.cache.set(getCacheKey(type, id), cachedValue)) as Cached<T>;
-  }
-
-  private async getFromCache<T>(type: CacheType, id: string): Promise<Cached<T> | null> {
-    return ((await this.cache.get(getCacheKey(type, id))) as Cached<T> | undefined) ?? null;
-  }
-
-  private async getPageFromCache(pageId: string, lastEditedTime: Date) {
-    const pageFromCache = await this.getFromCache<Page>('page', pageId);
-
-    if (pageFromCache === null) {
-      this.reporter.info(`Cache failed for page ${pageId}!`);
-      return null;
-    } else if (pageFromCache.cachedTime <= lastEditedTime.getTime()) {
-      this.reporter.info(`Page ${pageId} is updated: refetching page...`);
-      return null;
-    } else {
-      return pageFromCache.payload;
-    }
-  }
-
-  private async setPageToCache(page: Page) {
-    return this.setToCache('page', page.id, page);
   }
 
   private getBlock(id: string): FetchNotionData<Block> {
@@ -177,16 +82,16 @@ class NotionClient {
   }
 
   async getBlocks(id: string) {
-    return this.fetchAll(this.getBlock(id));
+    return this.fetchWrapper.fetchAll(this.getBlock(id));
   }
 
   private async getPageContent(result: PageObjectResponse): Promise<Page> {
     const lastEditedTime = new Date(result.last_edited_time);
-    const pageFromCache = await this.getPageFromCache(result.id, lastEditedTime);
+    const pageFromCache = await this.cacheWrapper.getPageFromCache(result.id, lastEditedTime);
     if (pageFromCache !== null) return pageFromCache;
 
     const pageFromNotion: Page = { ...result, children: await this.getBlocks(result.id) };
-    this.setPageToCache(pageFromNotion);
+    this.cacheWrapper.setPageToCache(pageFromNotion);
     return pageFromNotion;
   }
 
@@ -214,7 +119,7 @@ class NotionClient {
   }
 
   async getPages(): Promise<Page[]> {
-    return await this.fetchAll(this.getPagesFromNotion());
+    return await this.fetchWrapper.fetchAll(this.getPagesFromNotion());
   }
 
   private async updatePageSlug({ pageId, key, value, url }: UpdatePageOption) {
@@ -247,7 +152,7 @@ class NotionClient {
       return isPageAccessible(updateResult) ? updateResult.properties[key] : null;
     };
 
-    return this.fetchWithErrorHandler(fetch.bind(this));
+    return this.fetchWrapper.fetchWithErrorHandler(fetch.bind(this));
   }
 
   async appendSlug(page: Page, properties: Record<string, NormalizedValue>) {
