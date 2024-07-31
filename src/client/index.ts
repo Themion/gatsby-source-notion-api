@@ -35,23 +35,20 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
   item.object === 'page';
 
 class NotionClient {
-  private readonly client: Client;
   private readonly databaseId: string;
   private readonly reporter: Reporter;
   private readonly slugOptions: SlugOptions | null;
-  private readonly fetchWrapper: FetchWrapper;
-  private readonly cacheWrapper: CacheWrapper;
 
   constructor(
     { reporter, cache }: NodePluginArgs,
     { token, notionVersion, databaseId, slugOptions }: Options,
+    private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
+    private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache),
+    private readonly client: Client = new Client({ auth: token, notionVersion }),
   ) {
-    this.client = new Client({ auth: token, notionVersion });
     this.databaseId = databaseId;
     this.reporter = reporter;
     this.slugOptions = slugOptions ?? null;
-    this.fetchWrapper = new FetchWrapper(reporter);
-    this.cacheWrapper = new CacheWrapper(reporter, cache);
   }
 
   private getBlock(id: string): FetchNotionData<Block> {
