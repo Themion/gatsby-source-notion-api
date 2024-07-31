@@ -3,11 +3,9 @@ import {
   DatabaseObjectResponse,
   PageObjectResponse,
 } from '@notionhq/client/build/src/api-endpoints';
-import { GatsbyCache, NodePluginArgs, Reporter } from 'gatsby';
+import { NodePluginArgs, Reporter } from 'gatsby';
 import {
   Block,
-  Cached,
-  CacheType,
   FetchNotionData,
   NormalizedValue,
   NotionAPIPage,
@@ -16,7 +14,6 @@ import {
   SlugOptions,
 } from '~/types';
 import {
-  getCacheKey,
   getPromiseValue,
   getPropertyContent,
   isFulfilled,
@@ -24,6 +21,7 @@ import {
   isPropertyAccessible,
   isPropertySupported,
 } from '~/utils';
+import CacheWrapper from './cache';
 import FetchWrapper from './fetch';
 
 type UpdatePageOption = {
@@ -40,9 +38,9 @@ class NotionClient {
   private readonly client: Client;
   private readonly databaseId: string;
   private readonly reporter: Reporter;
-  private readonly cache: GatsbyCache;
   private readonly slugOptions: SlugOptions | null;
   private readonly fetchWrapper: FetchWrapper;
+  private readonly cacheWrapper: CacheWrapper;
 
   constructor(
     { reporter, cache }: NodePluginArgs,
@@ -51,39 +49,9 @@ class NotionClient {
     this.client = new Client({ auth: token, notionVersion });
     this.databaseId = databaseId;
     this.reporter = reporter;
-    this.cache = cache;
     this.slugOptions = slugOptions ?? null;
     this.fetchWrapper = new FetchWrapper(reporter);
-  }
-
-  private async setToCache<T>(type: CacheType, id: string, payload: T) {
-    const cachedDate = new Date();
-    cachedDate.setMilliseconds(0);
-    cachedDate.setSeconds(0);
-    const cachedValue: Cached<T> = { payload, cachedTime: cachedDate.getTime() };
-    return (await this.cache.set(getCacheKey(type, id), cachedValue)) as Cached<T>;
-  }
-
-  private async getFromCache<T>(type: CacheType, id: string): Promise<Cached<T> | null> {
-    return ((await this.cache.get(getCacheKey(type, id))) as Cached<T> | undefined) ?? null;
-  }
-
-  private async getPageFromCache(pageId: string, lastEditedTime: Date) {
-    const pageFromCache = await this.getFromCache<Page>('page', pageId);
-
-    if (pageFromCache === null) {
-      this.reporter.info(`Cache failed for page ${pageId}!`);
-      return null;
-    } else if (pageFromCache.cachedTime <= lastEditedTime.getTime()) {
-      this.reporter.info(`Page ${pageId} is updated: refetching page...`);
-      return null;
-    } else {
-      return pageFromCache.payload;
-    }
-  }
-
-  private async setPageToCache(page: Page) {
-    return this.setToCache('page', page.id, page);
+    this.cacheWrapper = new CacheWrapper(reporter, cache);
   }
 
   private getBlock(id: string): FetchNotionData<Block> {
@@ -122,11 +90,11 @@ class NotionClient {
 
   private async getPageContent(result: PageObjectResponse): Promise<Page> {
     const lastEditedTime = new Date(result.last_edited_time);
-    const pageFromCache = await this.getPageFromCache(result.id, lastEditedTime);
+    const pageFromCache = await this.cacheWrapper.getPageFromCache(result.id, lastEditedTime);
     if (pageFromCache !== null) return pageFromCache;
 
     const pageFromNotion: Page = { ...result, children: await this.getBlocks(result.id) };
-    this.setPageToCache(pageFromNotion);
+    this.cacheWrapper.setPageToCache(pageFromNotion);
     return pageFromNotion;
   }
 
