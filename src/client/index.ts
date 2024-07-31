@@ -1,4 +1,4 @@
-import { APIErrorCode, Client, isNotionClientError } from '@notionhq/client';
+import { Client } from '@notionhq/client';
 import {
   DatabaseObjectResponse,
   PageObjectResponse,
@@ -8,6 +8,7 @@ import {
   Block,
   Cached,
   CacheType,
+  FetchNotionData,
   NormalizedValue,
   NotionAPIPage,
   Options,
@@ -22,8 +23,8 @@ import {
   isPageAccessible,
   isPropertyAccessible,
   isPropertySupported,
-  wait,
 } from '~/utils';
+import FetchWrapper from './fetch';
 
 type UpdatePageOption = {
   pageId: string;
@@ -31,10 +32,6 @@ type UpdatePageOption = {
   value: string;
   url?: string;
 };
-
-type FetchNotionData<T> = (
-  cursor: string | null,
-) => Promise<{ nextCursor: string | null; data: T[] }>;
 
 const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item is NotionAPIPage =>
   item.object === 'page';
@@ -45,6 +42,7 @@ class NotionClient {
   private readonly reporter: Reporter;
   private readonly cache: GatsbyCache;
   private readonly slugOptions: SlugOptions | null;
+  private readonly fetchWrapper: FetchWrapper;
 
   constructor(
     { reporter, cache }: NodePluginArgs,
@@ -55,65 +53,7 @@ class NotionClient {
     this.reporter = reporter;
     this.cache = cache;
     this.slugOptions = slugOptions ?? null;
-  }
-
-  async waitAndLogWithNotionError(error: unknown) {
-    if (!isNotionClientError(error)) {
-      this.reporter.error('Unknwon Error has thrown!');
-      throw error;
-    }
-
-    switch (error.name) {
-      case 'APIResponseError':
-        switch (error.code) {
-          case APIErrorCode.RateLimited:
-            const retryAfter = parseInt((error.headers as Headers).get('retry-after') ?? '60', 10);
-            this.reporter.warn(
-              `API Rate Limit reached! retrying after ${Math.floor(retryAfter)} seconds...`,
-            );
-            await wait(retryAfter * 1000);
-            return;
-          case APIErrorCode.InternalServerError:
-          case APIErrorCode.ServiceUnavailable:
-            this.reporter.warn('Server-side error is thrown! retrying after 30 seconds...');
-            await wait(1000 * 30);
-            return;
-          default:
-            this.reporter.error(error);
-        }
-        break;
-      case 'RequestTimeoutError':
-        this.reporter.warn('Request Timeout error is thrown! retrying after 30 seconds...');
-        await wait(1000 * 30);
-        return;
-      case 'UnknownHTTPResponseError':
-        this.reporter.error(error);
-        break;
-    }
-    throw error;
-  }
-
-  private async fetchWithErrorHandler<T>(fetch: () => T) {
-    do {
-      try {
-        return await fetch();
-      } catch (error) {
-        await this.waitAndLogWithNotionError(error);
-      }
-    } while (true);
-  }
-
-  private async fetchAll<T>(fetch: FetchNotionData<T>) {
-    const dataList: T[] = [];
-    let cursor: string | null = null;
-
-    do {
-      const { nextCursor, data } = await this.fetchWithErrorHandler(() => fetch(cursor));
-      dataList.push(...data);
-      cursor = nextCursor;
-    } while (cursor != null);
-
-    return dataList;
+    this.fetchWrapper = new FetchWrapper(reporter);
   }
 
   private async setToCache<T>(type: CacheType, id: string, payload: T) {
@@ -177,7 +117,7 @@ class NotionClient {
   }
 
   async getBlocks(id: string) {
-    return this.fetchAll(this.getBlock(id));
+    return this.fetchWrapper.fetchAll(this.getBlock(id));
   }
 
   private async getPageContent(result: PageObjectResponse): Promise<Page> {
@@ -214,7 +154,7 @@ class NotionClient {
   }
 
   async getPages(): Promise<Page[]> {
-    return await this.fetchAll(this.getPagesFromNotion());
+    return await this.fetchWrapper.fetchAll(this.getPagesFromNotion());
   }
 
   private async updatePageSlug({ pageId, key, value, url }: UpdatePageOption) {
@@ -247,7 +187,7 @@ class NotionClient {
       return isPageAccessible(updateResult) ? updateResult.properties[key] : null;
     };
 
-    return this.fetchWithErrorHandler(fetch.bind(this));
+    return this.fetchWrapper.fetchWithErrorHandler(fetch.bind(this));
   }
 
   async appendSlug(page: Page, properties: Record<string, NormalizedValue>) {

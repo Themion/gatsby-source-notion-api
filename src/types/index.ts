@@ -17,6 +17,10 @@ export type Cached<T> = {
   payload: T;
 };
 
+export type FetchNotionData<T> = (
+  cursor: string | null,
+) => Promise<{ nextCursor: string | null; data: T[] }>;
+
 export type EntityWithUserDetail<E extends NotionAPIBlock | NotionAPIDatabase | NotionAPIPage> =
   E extends any
     ? Omit<E, 'created_by' | 'last_edited_by'> & {
