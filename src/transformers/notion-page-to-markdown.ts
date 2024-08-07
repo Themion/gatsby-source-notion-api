@@ -7,6 +7,8 @@ import { getYoutubeUrl } from './get-youtube-url';
 
 type BlockProperty = ReturnType<typeof getBlockProperty>;
 
+const BR = '<br>';
+
 const notionBlockComment = (
   block: Block,
   comment: string = `Block type '${block.type}' is not supported yet.`,
@@ -49,7 +51,7 @@ const notionBlockToMarkdown = (
       : '';
 
   // Extract the remaining content of the block and combine it with its children.
-  const blockMarkdown = blockToString(getBlockMarkdown(block)).trim();
+  const blockMarkdown = blockToString(getBlockMarkdown(block)).trim().replaceAll('\n', BR);
   const blockClass = htmlClass(block.type);
 
   switch (block.type) {
@@ -84,7 +86,7 @@ const notionBlockToMarkdown = (
     case 'heading_3':
       const headingLevel = Number(block.type.split('_')[1]);
       const headingSymbol = (lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
-      const headingContent = blockMarkdown === '' ? '<br>' : blockMarkdown;
+      const headingContent = blockMarkdown === '' ? BR : blockMarkdown;
       return `${headingSymbol} ${headingContent}`;
     case 'image':
       const imageUrl =
@@ -93,7 +95,7 @@ const notionBlockToMarkdown = (
     case 'numbered_list_item':
       return `1. ${blockMarkdown}`;
     case 'paragraph':
-      return blockMarkdown === '' ? '<br>' : blockMarkdown;
+      return blockMarkdown === '' ? BR : blockMarkdown;
     case 'quote':
       return `> ${blockMarkdown}`;
     case 'table':
