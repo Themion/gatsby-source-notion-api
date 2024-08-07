@@ -87,7 +87,7 @@ const getRichTextContent = (block: RichTextItemResponse): string => {
         return end !== null ? `${timeTag(start)} ~ ${timeTag(end)}` : timeTag(start);
       }
     default:
-      return block.plain_text.replaceAll('\n', '<br>');
+      return block.plain_text;
   }
 };
 
