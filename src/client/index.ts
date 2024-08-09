@@ -43,10 +43,11 @@ class NotionClient {
 
   constructor(
     { reporter, cache }: NodePluginArgs,
-    { token, notionVersion = '2022-06-28', filter, databaseId, slugOptions, maxCacheAge }: Options,
+    { token, notionVersion = '2022-06-28', filter, databaseId, slugOptions, cacheOptions }: Options,
     private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
-    private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache, maxCacheAge),
+    private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache, cacheOptions),
     private readonly client: Client = new Client({ auth: token, notionVersion }),
+    private readonly cacheEnabled = cacheOptions?.enabled ?? false,
   ) {
     this.databaseId = databaseId;
     this.filter = filter;
@@ -88,22 +89,26 @@ class NotionClient {
   }
 
   async getBlocks(id: string, lastEditedDate: Date) {
-    const cachedBlocks = await this.cacheWrapper.getBlocksFromCache(id, lastEditedDate);
-    if (cachedBlocks !== null) return cachedBlocks;
+    if (this.cacheEnabled) {
+      const cachedBlocks = await this.cacheWrapper.getBlocksFromCache(id, lastEditedDate);
+      if (cachedBlocks !== null) return cachedBlocks;
+    }
 
     const blocksFromNotion = await this.fetchWrapper.fetchAll(this.getBlock(id));
-    this.cacheWrapper.setBlocksToCache(id, blocksFromNotion);
+    if (this.cacheEnabled) this.cacheWrapper.setBlocksToCache(id, blocksFromNotion);
     return blocksFromNotion;
   }
 
   private async getPageContent(result: PageObjectResponse): Promise<Page> {
     const lastEditedTime = new Date(result.last_edited_time);
 
-    const blocksFromCache = await this.cacheWrapper.getBlocksFromCache(result.id, lastEditedTime);
-    if (blocksFromCache !== null) return { ...result, children: blocksFromCache };
+    if (this.cacheEnabled) {
+      const blocksFromCache = await this.cacheWrapper.getBlocksFromCache(result.id, lastEditedTime);
+      if (blocksFromCache !== null) return { ...result, children: blocksFromCache };
+    }
 
     const blocksFromNotion = await this.getBlocks(result.id, lastEditedTime);
-    this.cacheWrapper.setBlocksToCache(result.id, blocksFromNotion);
+    if (this.cacheEnabled) this.cacheWrapper.setBlocksToCache(result.id, blocksFromNotion);
 
     return { ...result, children: blocksFromNotion };
   }

@@ -140,6 +140,14 @@ export type SlugOptions = {
   key: string;
   generator?: SlugGenerator;
 };
+export type CacheOptions =
+  | {
+      enabled: false;
+    }
+  | {
+      enabled: true;
+      maxAge?: number;
+    };
 
 export type Options = {
   token: string;
@@ -150,7 +158,7 @@ export type Options = {
   lowerTitleLevel?: boolean;
   devServerRefreshInterval?: number;
   slugOptions?: SlugOptions;
-  maxCacheAge?: number;
+  cacheOptions?: CacheOptions;
   keyConverter?: KeyConverter;
   valueConverter?: ValueConverter;
 };
