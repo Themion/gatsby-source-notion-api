@@ -26,6 +26,16 @@ const equationUrl = (content: string) =>
     content,
   )}&bc=White&fc=Black&im=jpg&fs=20&ff=arev&edit=`;
 
+const escapeHtml = (content: string) =>
+  content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+const escapeRichText = ({ content, ...data }: TextInfo) => ({
+  ...data,
+  content: escapeHtml(content),
+});
 const annotateEquation = ifTrue(pick('equation'), ({ content, ...data }) => ({
   ...data,
   content: `<img src="${equationUrl(content)}" alt="${content}"></img>`,
@@ -65,6 +75,7 @@ const annotateColor = ifTrue(
 );
 
 const stylize = pipe(
+  escapeRichText,
   annotateEquation,
   annotateLink,
   annotateCode,
