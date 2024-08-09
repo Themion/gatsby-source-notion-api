@@ -51,7 +51,9 @@ const notionBlockToMarkdown = (
       : '';
 
   // Extract the remaining content of the block and combine it with its children.
-  const blockMarkdown = blockToString(getBlockMarkdown(block)).trim().replaceAll('\n', BR);
+  const blockMarkdown = blockToString(getBlockMarkdown(block), block.type !== 'code')
+    .trim()
+    .replaceAll('\n', BR);
   const blockClass = htmlClass(block.type);
 
   switch (block.type) {
@@ -64,18 +66,18 @@ const notionBlockToMarkdown = (
       const bookmarkCaption = blockToString(block.bookmark.caption) || bookmarkUrl;
       return `[${bookmarkCaption}](${block.bookmark.url})`;
     case 'bulleted_list_item':
-      return `* ${blockMarkdown}`;
+      return `<ul><li>${blockMarkdown}</li></ul>`;
     case 'child_page':
       if (block.has_children) return childPageToHtml(block);
       return '';
     case 'code':
-      return `\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\`${childMarkdown}`;
+      return `\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\``;
     case 'column':
       return `<div ${blockClass}>${childMarkdown}</div>`;
     case 'column_list':
       return `<div ${blockClass}>${childMarkdown}</div>`;
     case 'divider':
-      return '---';
+      return '<hr>';
     case 'embed':
       return captionize(
         `<iframe ${blockClass} src="${block.embed.url}"></iframe>`,
@@ -84,20 +86,21 @@ const notionBlockToMarkdown = (
     case 'heading_1':
     case 'heading_2':
     case 'heading_3':
-      const headingLevel = Number(block.type.split('_')[1]);
+      const headingLevel = parseInt(block.type.split('_')[1], 10);
       const headingSymbol = (lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
       const headingContent = blockMarkdown === '' ? BR : blockMarkdown;
       return `${headingSymbol} ${headingContent}`;
     case 'image':
       const imageUrl =
         block.image.type == 'external' ? block.image.external.url : block.image.file.url;
-      return `![${blockToString(block.image.caption)}](${imageUrl})`;
+      const caption = blockToString(block.image.caption);
+      return `<figure><img src="${imageUrl}" alt="${caption}"><figcaption>${caption}</figcaption></figure>`;
     case 'numbered_list_item':
-      return `1. ${blockMarkdown}`;
+      return `<ol><li>${blockMarkdown}</li></ol>`;
     case 'paragraph':
       return blockMarkdown === '' ? BR : blockMarkdown;
     case 'quote':
-      return `> ${blockMarkdown}`;
+      return `<blockquote>${blockMarkdown}</blockquote>`;
     case 'table':
       const tableContent = childMarkdown.replaceAll(/\n+/g, '\n');
       const table = `<table>\n${tableContent}\n</table>`;
@@ -111,12 +114,13 @@ const notionBlockToMarkdown = (
       const isHeaderCell = (i: number) => isHeaderRow || isHeaderColumn(i);
 
       const cells = block.table_row.cells
-        .map(blockToString)
+        .map((block) => blockToString(block))
         .map((cell, i) => (isHeaderCell(i) ? `<th>${cell}</th>` : `<td>${cell}</td>`));
 
       return `<tr>${cells.join('')}</tr>`;
     case 'to_do':
-      return `- [${block.to_do.checked ? 'x' : ' '}] ${blockMarkdown}`;
+      const checked = block.to_do.checked ? 'checked' : '';
+      return `<input type="checkbox" ${checked} disabled>${blockMarkdown}</input>`;
     case 'toggle':
       const detailsClass = htmlClass('details');
       const summaryClass = htmlClass('summary');
@@ -151,4 +155,6 @@ export const notionPageToMarkdown = (page: Page, lowerTitleLevel: boolean) =>
   page.children
     .map((child) => notionBlockToMarkdown(child, lowerTitleLevel))
     .join('\n\n')
+    .replaceAll('</ul>\n\n<ul>', '')
+    .replaceAll('</ol>\n\n<ol>', '')
     .trim();
