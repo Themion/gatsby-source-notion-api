@@ -137,12 +137,12 @@ export type CacheType = 'page' | 'database';
 export type Options = {
   token: string;
   databaseId: string;
-  notionVersion: string;
-  filter: QueryDatabaseParameters['filter'];
-  propsToFrontmatter: boolean;
-  lowerTitleLevel: boolean;
+  notionVersion?: string;
+  filter?: NonNullable<QueryDatabaseParameters['filter']>;
+  propsToFrontmatter?: boolean;
+  lowerTitleLevel?: boolean;
   devServerRefreshInterval?: number;
   slugOptions?: SlugOptions;
-  keyConverter: KeyConverter;
-  valueConverter: ValueConverter;
+  keyConverter?: KeyConverter;
+  valueConverter?: ValueConverter;
 };

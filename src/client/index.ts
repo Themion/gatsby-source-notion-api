@@ -43,7 +43,7 @@ class NotionClient {
 
   constructor(
     { reporter, cache }: NodePluginArgs,
-    { token, notionVersion, filter, databaseId, slugOptions }: Options,
+    { token, notionVersion = '2022-06-28', filter, databaseId, slugOptions }: Options,
     private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
     private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache),
     private readonly client: Client = new Client({ auth: token, notionVersion }),
