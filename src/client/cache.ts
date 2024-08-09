@@ -1,6 +1,6 @@
 import { GatsbyCache, Reporter } from 'gatsby';
 import { CACHE_PREFIX, NODE_TYPE } from '~/constants';
-import { CacheType, Cached, Page } from '~/types';
+import { Block, CachePayloadType, CacheType, Cached, Page } from '~/types';
 
 const getCacheKey = (type: CacheType, id: string) =>
   `${NODE_TYPE.toUpperCase()}_${CACHE_PREFIX[type]}_${id}`;
@@ -12,7 +12,7 @@ class CacheWrapper {
     private readonly maxCacheAge?: number,
   ) {}
 
-  private async setToCache<T>(type: CacheType, id: string, payload: T) {
+  private async setToCache<T extends CacheType>(type: T, id: string, payload: CachePayloadType[T]) {
     const cachedDate = new Date();
     cachedDate.setMilliseconds(0);
     cachedDate.setSeconds(0);
@@ -22,33 +22,44 @@ class CacheWrapper {
     return (await this.cache.set(getCacheKey(type, id), cachedValue)) as Cached<T>;
   }
 
-  private async getFromCache<T>(type: CacheType, id: string): Promise<Cached<T> | null> {
+  private async getFromCache<T extends CacheType>(
+    type: T,
+    id: string,
+    lastEditedTime: Date,
+  ): Promise<CachePayloadType[T] | null> {
     const cachedValue = (await this.cache.get(getCacheKey(type, id))) as Cached<T> | undefined;
 
     const isCacheEmpty = cachedValue === undefined;
-    const isCacheValid =
+    const isCacheInvalidated = (cachedValue?.cachedTime ?? -1) <= lastEditedTime.getTime();
+    const isCacheAlive =
       new Date().getTime() <= (cachedValue?.expiresAt ?? new Date().getTime() + 1);
 
-    if (cachedValue === undefined) return null;
-    return isCacheEmpty || isCacheValid ? null : cachedValue;
+    if (isCacheEmpty) {
+      this.reporter.info(`cache failed for ${type} ${id}!`);
+      return null;
+    } else if (isCacheInvalidated) {
+      this.reporter.info(`${type} ${id} is updated: refetching ${type}...`);
+      return null;
+    } else if (!isCacheAlive) {
+      this.reporter.info(`cache of ${type} ${id} is outdated: refetching ${type}...`);
+      return null;
+    } else return cachedValue.payload;
   }
 
   async getPageFromCache(pageId: string, lastEditedTime: Date) {
-    const pageFromCache = await this.getFromCache<Page>('page', pageId);
-
-    if (pageFromCache === null) {
-      this.reporter.info(`Cache failed for page ${pageId}!`);
-      return null;
-    } else if (pageFromCache.cachedTime <= lastEditedTime.getTime()) {
-      this.reporter.info(`Page ${pageId} is updated: refetching page...`);
-      return null;
-    } else {
-      return pageFromCache.payload;
-    }
+    return await this.getFromCache('page', pageId, lastEditedTime);
   }
 
   async setPageToCache(page: Page) {
-    return this.setToCache('page', page.id, page);
+    return await this.setToCache('page', page.id, page);
+  }
+
+  async getBlocksFromCache(blockId: string, lastEditedTime: Date) {
+    return await this.getFromCache('block', blockId, lastEditedTime);
+  }
+
+  async setBlocksToCache(id: string, blocks: Block[]) {
+    return await this.setToCache('block', id, blocks);
   }
 }
 

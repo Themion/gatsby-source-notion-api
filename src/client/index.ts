@@ -70,7 +70,10 @@ class NotionClient {
             async (block): Promise<Block> => ({
               ...block,
               ...(block.has_children
-                ? { has_children: true, children: await this.getBlocks(block.id) }
+                ? {
+                    has_children: true,
+                    children: await this.getBlocks(block.id, new Date(block.last_edited_time)),
+                  }
                 : { has_children: false }),
             }),
           ),
@@ -85,8 +88,13 @@ class NotionClient {
     return fetch.bind(this);
   }
 
-  async getBlocks(id: string) {
-    return this.fetchWrapper.fetchAll(this.getBlock(id));
+  async getBlocks(id: string, lastEditedDate: Date) {
+    const cachedBlocks = await this.cacheWrapper.getBlocksFromCache(id, lastEditedDate);
+    if (cachedBlocks !== null) return cachedBlocks;
+
+    const blocksFromNotion = await this.fetchWrapper.fetchAll(this.getBlock(id));
+    this.cacheWrapper.setBlocksToCache(id, blocksFromNotion);
+    return blocksFromNotion;
   }
 
   private async getPageContent(result: PageObjectResponse): Promise<Page> {
@@ -94,7 +102,10 @@ class NotionClient {
     const pageFromCache = await this.cacheWrapper.getPageFromCache(result.id, lastEditedTime);
     if (pageFromCache !== null) return pageFromCache;
 
-    const pageFromNotion: Page = { ...result, children: await this.getBlocks(result.id) };
+    const pageFromNotion: Page = {
+      ...result,
+      children: await this.getBlocks(result.id, lastEditedTime),
+    };
     this.cacheWrapper.setPageToCache(pageFromNotion);
     return pageFromNotion;
   }

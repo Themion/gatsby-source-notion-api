@@ -13,12 +13,6 @@ export * from './notion';
  * Helper
  */
 
-export type Cached<T> = {
-  cachedTime: number;
-  expiresAt: number | null;
-  payload: T;
-};
-
 export type FetchNotionData<T> = (
   cursor: string | null,
 ) => Promise<{ nextCursor: string | null; data: T[] }>;
@@ -133,7 +127,17 @@ export type SlugOptions = {
   generator?: SlugGenerator;
 };
 
-export type CacheType = 'page' | 'database';
+export type CacheType = 'page' | 'block';
+export type CachePayloadType = {
+  page: Page;
+  block: Block[];
+};
+
+export type Cached<T extends CacheType> = {
+  cachedTime: number;
+  expiresAt: number | null;
+  payload: CachePayloadType[T];
+};
 
 export type Options = {
   token: string;
