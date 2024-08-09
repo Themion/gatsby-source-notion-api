@@ -32,10 +32,7 @@ const escapeHtml = (content: string) =>
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-const escapeRichText = ({ content, ...data }: TextInfo) => ({
-  ...data,
-  content: escapeHtml(content),
-});
+
 const annotateEquation = ifTrue(pick('equation'), ({ content, ...data }) => ({
   ...data,
   content: `<img src="${equationUrl(content)}" alt="${content}"></img>`,
@@ -75,7 +72,6 @@ const annotateColor = ifTrue(
 );
 
 const stylize = pipe(
-  escapeRichText,
   annotateEquation,
   annotateLink,
   annotateCode,
@@ -102,16 +98,17 @@ const getRichTextContent = (block: RichTextItemResponse): string => {
   }
 };
 
-const getRichTextHtml = (textBlock: RichTextItemResponse): string => {
+const getRichTextHtml = (textBlock: RichTextItemResponse, escape: boolean): string => {
+  const content = getRichTextContent(textBlock);
   const data: TextInfo = {
     ...textBlock.annotations,
     equation: textBlock.type === 'equation',
     link: textBlock.type === 'text' ? textBlock.text.link : null,
-    content: getRichTextContent(textBlock),
+    content: escape ? escapeHtml(content) : content,
   };
 
   return stylize(data).content;
 };
 
-export const blockToString = (textBlocks: RichTextItemResponse[]): string =>
-  textBlocks.map(getRichTextHtml).join('');
+export const blockToString = (textBlocks: RichTextItemResponse[], escape: boolean = true): string =>
+  textBlocks.map((block) => getRichTextHtml(block, escape)).join('');

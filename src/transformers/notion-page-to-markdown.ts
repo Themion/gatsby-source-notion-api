@@ -51,7 +51,9 @@ const notionBlockToMarkdown = (
       : '';
 
   // Extract the remaining content of the block and combine it with its children.
-  const blockMarkdown = blockToString(getBlockMarkdown(block)).trim().replaceAll('\n', BR);
+  const blockMarkdown = blockToString(getBlockMarkdown(block), block.type !== 'code')
+    .trim()
+    .replaceAll('\n', BR);
   const blockClass = htmlClass(block.type);
 
   switch (block.type) {
@@ -111,7 +113,7 @@ const notionBlockToMarkdown = (
       const isHeaderCell = (i: number) => isHeaderRow || isHeaderColumn(i);
 
       const cells = block.table_row.cells
-        .map(blockToString)
+        .map((block) => blockToString(block))
         .map((cell, i) => (isHeaderCell(i) ? `<th>${cell}</th>` : `<td>${cell}</td>`));
 
       return `<tr>${cells.join('')}</tr>`;
