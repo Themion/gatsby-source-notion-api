@@ -15,6 +15,7 @@ export * from './notion';
 
 export type Cached<T> = {
   cachedTime: number;
+  expiresAt: number | null;
   payload: T;
 };
 
@@ -143,6 +144,7 @@ export type Options = {
   lowerTitleLevel?: boolean;
   devServerRefreshInterval?: number;
   slugOptions?: SlugOptions;
+  maxCacheAge?: number;
   keyConverter?: KeyConverter;
   valueConverter?: ValueConverter;
 };

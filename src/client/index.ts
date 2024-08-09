@@ -43,11 +43,12 @@ class NotionClient {
 
   constructor(
     { reporter, cache }: NodePluginArgs,
-    { token, notionVersion = '2022-06-28', filter, databaseId, slugOptions }: Options,
+    { token, notionVersion = '2022-06-28', filter, databaseId, slugOptions, maxCacheAge }: Options,
     private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
-    private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache),
+    private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache, maxCacheAge),
     private readonly client: Client = new Client({ auth: token, notionVersion }),
   ) {
+    console.log({ maxCacheAge });
     this.databaseId = databaseId;
     this.filter = filter;
     this.reporter = reporter;
