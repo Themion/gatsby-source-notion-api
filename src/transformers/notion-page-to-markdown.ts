@@ -75,7 +75,7 @@ const notionBlockToMarkdown = (
     case 'column':
       return `<div ${blockClass}>${childMarkdown}</div>`;
     case 'column_list':
-      return `<div ${blockClass}>${childMarkdown}</div>`;
+      return `<div ${blockClass}>${childMarkdown.replaceAll('</div>\n\n<div', '</div><div')}</div>`;
     case 'divider':
       return '<hr>';
     case 'embed':
