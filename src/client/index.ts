@@ -2,6 +2,7 @@ import { Client } from '@notionhq/client';
 import {
   DatabaseObjectResponse,
   PageObjectResponse,
+  QueryDatabaseParameters,
 } from '@notionhq/client/build/src/api-endpoints';
 import { NodePluginArgs, Reporter } from 'gatsby';
 import {
@@ -36,17 +37,19 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
 
 class NotionClient {
   private readonly databaseId: string;
+  private readonly filter: QueryDatabaseParameters['filter'];
   private readonly reporter: Reporter;
   private readonly slugOptions: SlugOptions | null;
 
   constructor(
     { reporter, cache }: NodePluginArgs,
-    { token, notionVersion, databaseId, slugOptions }: Options,
+    { token, notionVersion, filter, databaseId, slugOptions }: Options,
     private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
     private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache),
     private readonly client: Client = new Client({ auth: token, notionVersion }),
   ) {
     this.databaseId = databaseId;
+    this.filter = filter;
     this.reporter = reporter;
     this.slugOptions = slugOptions ?? null;
   }
@@ -100,6 +103,7 @@ class NotionClient {
       const { results, next_cursor } = await this.client.databases.query({
         database_id: this.databaseId,
         start_cursor: cursor ?? undefined,
+        filter: this.filter,
       });
 
       const fetchedPages: PromiseSettledResult<Page>[] = await Promise.allSettled(

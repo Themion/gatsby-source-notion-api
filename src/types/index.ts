@@ -1,3 +1,4 @@
+import { QueryDatabaseParameters } from '@notionhq/client/build/src/api-endpoints';
 import type {
   NotionAPIBlock,
   NotionAPIDatabase,
@@ -137,6 +138,7 @@ export type Options = {
   token: string;
   databaseId: string;
   notionVersion: string;
+  filter: QueryDatabaseParameters['filter'];
   propsToFrontmatter: boolean;
   lowerTitleLevel: boolean;
   devServerRefreshInterval?: number;
