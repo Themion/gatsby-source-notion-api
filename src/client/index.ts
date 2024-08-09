@@ -47,7 +47,7 @@ class NotionClient {
     private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
     private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache, cacheOptions),
     private readonly client: Client = new Client({ auth: token, notionVersion }),
-    private readonly cacheEnabled = cacheOptions?.enabled ?? false,
+    private readonly cacheEnabled = cacheOptions?.enabled ?? true,
   ) {
     this.databaseId = databaseId;
     this.filter = filter;
