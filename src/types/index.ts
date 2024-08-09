@@ -13,11 +13,6 @@ export * from './notion';
  * Helper
  */
 
-export type Cached<T> = {
-  cachedTime: number;
-  payload: T;
-};
-
 export type FetchNotionData<T> = (
   cursor: string | null,
 ) => Promise<{ nextCursor: string | null; data: T[] }>;
@@ -111,6 +106,21 @@ export type Database = {
   pages: Page[];
 };
 
+/*
+ * Cache
+ */
+
+export type CacheType = 'page' | 'block';
+export type CachePayloadType = {
+  page: Page;
+  block: Block[];
+};
+export type Cached<T extends CacheType> = {
+  cachedTime: number;
+  expiresAt: number | null;
+  payload: CachePayloadType[T];
+};
+
 type ConverterArgument = {
   name: string;
   value: NormalizedValue;
@@ -131,18 +141,25 @@ export type SlugOptions = {
   key: string;
   generator?: SlugGenerator;
 };
-
-export type CacheType = 'page' | 'database';
+export type CacheOptions =
+  | {
+      enabled: false;
+    }
+  | {
+      enabled: true;
+      maxAge?: number;
+    };
 
 export type Options = {
   token: string;
   databaseId: string;
-  notionVersion: string;
-  filter: QueryDatabaseParameters['filter'];
-  propsToFrontmatter: boolean;
-  lowerTitleLevel: boolean;
+  notionVersion?: string;
+  filter?: NonNullable<QueryDatabaseParameters['filter']>;
+  propsToFrontmatter?: boolean;
+  lowerTitleLevel?: boolean;
   devServerRefreshInterval?: number;
   slugOptions?: SlugOptions;
-  keyConverter: KeyConverter;
-  valueConverter: ValueConverter;
+  cacheOptions?: CacheOptions;
+  keyConverter?: KeyConverter;
+  valueConverter?: ValueConverter;
 };
