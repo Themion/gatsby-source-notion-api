@@ -103,14 +103,17 @@ class NotionClient {
     const lastEditedTime = new Date(result.last_edited_time);
 
     if (this.cacheEnabled) {
-      const blocksFromCache = await this.cacheWrapper.getBlocksFromCache(result.id, lastEditedTime);
-      if (blocksFromCache !== null) return { ...result, children: blocksFromCache };
+      const pageFromCache = await this.cacheWrapper.getPageFromCache(result.id, lastEditedTime);
+      if (pageFromCache !== null) return pageFromCache;
     }
 
-    const blocksFromNotion = await this.getBlocks(result.id, lastEditedTime);
-    if (this.cacheEnabled) this.cacheWrapper.setBlocksToCache(result.id, blocksFromNotion);
+    const pageFromNotion: Page = {
+      ...result,
+      children: await this.getBlocks(result.id, lastEditedTime),
+    };
+    if (this.cacheEnabled) this.cacheWrapper.setPageToCache(pageFromNotion);
 
-    return { ...result, children: blocksFromNotion };
+    return pageFromNotion;
   }
 
   private getPagesFromNotion(): FetchNotionData<Page> {

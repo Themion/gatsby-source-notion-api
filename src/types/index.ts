@@ -110,8 +110,9 @@ export type Database = {
  * Cache
  */
 
-export type CacheType = 'block';
+export type CacheType = 'page' | 'block';
 export type CachePayloadType = {
+  page: Page;
   block: Block[];
 };
 export type Cached<T extends CacheType> = {
