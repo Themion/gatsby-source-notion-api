@@ -1,6 +1,6 @@
 import { GatsbyCache, Reporter } from 'gatsby';
 import { CACHE_PREFIX, NODE_TYPE } from '~/constants';
-import { Block, CachePayloadType, CacheType, Cached, Page } from '~/types';
+import { Block, CachePayloadType, CacheType, Cached } from '~/types';
 
 const getCacheKey = (type: CacheType, id: string) =>
   `${NODE_TYPE.toUpperCase()}_${CACHE_PREFIX[type]}_${id}`;
@@ -44,14 +44,6 @@ class CacheWrapper {
       this.reporter.info(`cache of ${type} ${id} is outdated: refetching ${type}...`);
       return null;
     } else return cachedValue.payload;
-  }
-
-  async getPageFromCache(pageId: string, lastEditedTime: Date) {
-    return await this.getFromCache('page', pageId, lastEditedTime);
-  }
-
-  async setPageToCache(page: Page) {
-    return await this.setToCache('page', page.id, page);
   }
 
   async getBlocksFromCache(blockId: string, lastEditedTime: Date) {

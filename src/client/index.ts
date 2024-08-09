@@ -48,7 +48,6 @@ class NotionClient {
     private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache, maxCacheAge),
     private readonly client: Client = new Client({ auth: token, notionVersion }),
   ) {
-    console.log({ maxCacheAge });
     this.databaseId = databaseId;
     this.filter = filter;
     this.reporter = reporter;
@@ -99,15 +98,14 @@ class NotionClient {
 
   private async getPageContent(result: PageObjectResponse): Promise<Page> {
     const lastEditedTime = new Date(result.last_edited_time);
-    const pageFromCache = await this.cacheWrapper.getPageFromCache(result.id, lastEditedTime);
-    if (pageFromCache !== null) return pageFromCache;
 
-    const pageFromNotion: Page = {
-      ...result,
-      children: await this.getBlocks(result.id, lastEditedTime),
-    };
-    this.cacheWrapper.setPageToCache(pageFromNotion);
-    return pageFromNotion;
+    const blocksFromCache = await this.cacheWrapper.getBlocksFromCache(result.id, lastEditedTime);
+    if (blocksFromCache !== null) return { ...result, children: blocksFromCache };
+
+    const blocksFromNotion = await this.getBlocks(result.id, lastEditedTime);
+    this.cacheWrapper.setBlocksToCache(result.id, blocksFromNotion);
+
+    return { ...result, children: blocksFromNotion };
   }
 
   private getPagesFromNotion(): FetchNotionData<Page> {

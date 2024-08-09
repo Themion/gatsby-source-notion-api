@@ -106,6 +106,20 @@ export type Database = {
   pages: Page[];
 };
 
+/*
+ * Cache
+ */
+
+export type CacheType = 'block';
+export type CachePayloadType = {
+  block: Block[];
+};
+export type Cached<T extends CacheType> = {
+  cachedTime: number;
+  expiresAt: number | null;
+  payload: CachePayloadType[T];
+};
+
 type ConverterArgument = {
   name: string;
   value: NormalizedValue;
@@ -125,18 +139,6 @@ export type SlugGenerator = (
 export type SlugOptions = {
   key: string;
   generator?: SlugGenerator;
-};
-
-export type CacheType = 'page' | 'block';
-export type CachePayloadType = {
-  page: Page;
-  block: Block[];
-};
-
-export type Cached<T extends CacheType> = {
-  cachedTime: number;
-  expiresAt: number | null;
-  payload: CachePayloadType[T];
 };
 
 export type Options = {
