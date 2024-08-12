@@ -2,9 +2,7 @@ import { RichTextItemResponse } from '@notionhq/client/build/src/api-endpoints';
 import type { Block } from '~/types';
 
 const richTextToCode = (blockList: RichTextItemResponse[]) =>
-  blockList
-    .map(({ plain_text }) => plain_text)
-    .join();
+  blockList.map(({ plain_text }) => plain_text).join('');
 
 const childBlockToHtml = (childBlock: Extract<Block, { type: 'code' }>) => {
   const code = richTextToCode(childBlock.code.rich_text);

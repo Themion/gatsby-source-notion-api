@@ -1,10 +1,10 @@
 import { RichTextItemResponse } from '@notionhq/client/build/src/api-endpoints';
+import { NodePluginArgs } from 'gatsby';
 import { blockToString } from '~/block-to-string';
 import type { Block, Options, Page } from '~/types';
 import { getBlockProperty } from '~/utils';
 import { childPageToHtml } from './child-page-to-html';
 import { getYoutubeUrl } from './get-youtube-url';
-import { NodePluginArgs } from 'gatsby';
 
 type BlockProperty = ReturnType<typeof getBlockProperty>;
 
@@ -46,7 +46,7 @@ const notionBlockToMarkdown = (
   options: Options,
   parentBlock: Block | null = null,
 ): string => {
-  const { lowerTitleLevel = true } = options
+  const { lowerTitleLevel = true } = options;
 
   const childMarkdown =
     block.has_children === true
@@ -59,7 +59,7 @@ const notionBlockToMarkdown = (
   // Extract the remaining content of the block and combine it with its children.
   const blockMarkdown = blockToString(getBlockMarkdown(block), block.type !== 'code')
     .trim()
-    .replaceAll('\n', BR);
+    .replaceAll('\n', block.type === 'code' ? BR : '\n');
   const blockClass = htmlClass(block.type);
 
   switch (block.type) {
