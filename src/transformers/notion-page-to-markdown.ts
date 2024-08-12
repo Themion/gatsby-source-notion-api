@@ -59,7 +59,7 @@ const notionBlockToMarkdown = (
   // Extract the remaining content of the block and combine it with its children.
   const blockMarkdown = blockToString(getBlockMarkdown(block), block.type !== 'code')
     .trim()
-    .replaceAll('\n', block.type === 'code' ? BR : '\n');
+    .replaceAll('\n', block.type === 'code' ? '\n' : BR);
   const blockClass = htmlClass(block.type);
 
   switch (block.type) {
@@ -81,6 +81,7 @@ const notionBlockToMarkdown = (
       if (block.has_children) return childPageToHtml(block);
       return '';
     case 'code':
+      console.log(`\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\``);
       return `\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\``;
     case 'column':
       return `<div ${blockClass}>${childMarkdown}</div>`;
