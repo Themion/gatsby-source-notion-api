@@ -34,23 +34,21 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
   item.object === 'page';
 
 class NotionClient {
-  private readonly databaseId: string;
-  private readonly filter: QueryDatabaseParameters['filter'];
-  private readonly reporter: Reporter;
-  private readonly slugOptions: SlugOptions | null;
 
   constructor(
-    { reporter, cache }: NodePluginArgs,
-    { token, notionVersion = '2022-06-28', filter, databaseId, slugOptions, cacheOptions }: Options,
+    { cache, ...nodePluginArgs }: NodePluginArgs,
+    { token, notionVersion = '2022-06-28', cacheOptions, ...options }: Options,
+
+    private readonly databaseId = options.databaseId,
+    private readonly filter = options.filter,
+    private readonly reporter = nodePluginArgs.reporter,
+    private readonly slugOptions: SlugOptions | null = options.slugOptions ?? null,
+    private readonly cacheEnabled = cacheOptions?.enabled ?? true,
+
     private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
     private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache, cacheOptions),
     private readonly client: Client = new Client({ auth: token, notionVersion }),
-    private readonly cacheEnabled = cacheOptions?.enabled ?? true,
   ) {
-    this.databaseId = databaseId;
-    this.filter = filter;
-    this.reporter = reporter;
-    this.slugOptions = slugOptions ?? null;
   }
 
   private getBlock(id: string): FetchNotionData<Block> {
