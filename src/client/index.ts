@@ -36,14 +36,14 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
 class NotionClient {
   constructor(
     { cache, ...nodePluginArgs }: NodePluginArgs,
-    { token, notionVersion = '2022-06-28', cacheOptions, ...options }: Options,
+    { token, notionVersion = '2022-06-28', cacheOptions = { enabled: true }, ...options }: Options,
 
     private readonly databaseId = options.databaseId,
     private readonly filter = options.filter,
     private readonly reporter = nodePluginArgs.reporter,
     private readonly slugOptions: SlugOptions | null = options.slugOptions ?? null,
     private readonly usePageContent = options.usePageContent ?? true,
-    private readonly cacheEnabled = this.usePageContent ? cacheOptions?.enabled ?? true : false,
+    private readonly cacheEnabled = this.usePageContent ? cacheOptions.enabled : false,
 
     private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
     private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache, cacheOptions),

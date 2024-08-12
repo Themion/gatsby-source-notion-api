@@ -46,6 +46,8 @@ const notionBlockToMarkdown = (
   options: Options,
   parentBlock: Block | null = null,
 ): string => {
+  const { lowerTitleLevel = true } = options
+
   const childMarkdown =
     block.has_children === true
       ? block.children
@@ -95,7 +97,7 @@ const notionBlockToMarkdown = (
     case 'heading_2':
     case 'heading_3':
       const headingLevel = parseInt(block.type.split('_')[1], 10);
-      const headingSymbol = (options.lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
+      const headingSymbol = (lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
       const headingContent = blockMarkdown === '' ? BR : blockMarkdown;
       return `${headingSymbol} ${headingContent}`;
     case 'image':
