@@ -9,7 +9,8 @@ import { NodePluginArgs } from 'gatsby';
 type BlockProperty = ReturnType<typeof getBlockProperty>;
 
 const BR = '<br>';
-const MEDIA_FILE_ERROR_MESSAGE = "Media file stored in Notion will last only for 1 hour! Consider using link embed, or disable gatsby cache."
+const MEDIA_FILE_ERROR_MESSAGE =
+  'Media file stored in Notion will last only for 1 hour! Consider using link embed, or disable gatsby cache.';
 
 const notionBlockComment = (
   block: Block,
@@ -166,7 +167,11 @@ const notionBlockToMarkdown = (
   }
 };
 
-export const notionPageToMarkdown = (page: Page, nodePluginArgs: NodePluginArgs, options: Options) =>
+export const notionPageToMarkdown = (
+  page: Page,
+  nodePluginArgs: NodePluginArgs,
+  options: Options,
+) =>
   page.children
     .map((child) => notionBlockToMarkdown(child, nodePluginArgs, options))
     .join('\n\n')
