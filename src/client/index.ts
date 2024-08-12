@@ -15,9 +15,7 @@ import {
   SlugOptions,
 } from '~/types';
 import {
-  getPromiseValue,
   getPropertyContent,
-  isFulfilled,
   isPageAccessible,
   isPropertyAccessible,
   isPropertySupported,
@@ -62,25 +60,26 @@ class NotionClient {
         start_cursor: cursor ?? undefined,
       });
 
-      const blocks = await Promise.allSettled(
-        results
-          .filter(isPropertyAccessible)
-          .filter(isPropertySupported)
-          .map(
-            async (block): Promise<Block> => ({
-              ...block,
-              ...(block.has_children
-                ? {
-                    has_children: true,
-                    children: await this.getBlocks(block.id, new Date(block.last_edited_time)),
-                  }
-                : { has_children: false }),
-            }),
-          ),
-      );
+      const fetchedBlocks = results.filter(isPropertyAccessible).filter(isPropertySupported);
+
+      const blocks: Block[] = [];
+
+      for (const block of fetchedBlocks) {
+        blocks.push({
+          ...block,
+          ...(block.has_children
+            ? {
+                has_children: true,
+                children: await this.getBlocks(block.id, new Date(block.last_edited_time)),
+              }
+            : {
+                has_children: false,
+              }),
+        });
+      }
 
       return {
-        data: blocks.filter(isFulfilled).map(getPromiseValue),
+        data: blocks,
         nextCursor: next_cursor,
       };
     };
@@ -124,15 +123,17 @@ class NotionClient {
         filter: this.filter,
       });
 
-      const fetchedPages: PromiseSettledResult<Page>[] = await Promise.allSettled(
-        results
-          .filter(isPageAccessible)
-          .filter(isPageObject)
-          .map((result) => this.getPageContent(result)),
-      );
+      const pageObjectResponse: PageObjectResponse[] = results
+        .filter(isPageAccessible)
+        .filter(isPageObject);
+      const pages: Page[] = [];
+
+      for (const pageObject of pageObjectResponse) {
+        pages.push(await this.getPageContent(pageObject));
+      }
 
       return {
-        data: fetchedPages.filter(isFulfilled).map(getPromiseValue),
+        data: pages,
         nextCursor: next_cursor,
       };
     };
