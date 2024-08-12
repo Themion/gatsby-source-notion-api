@@ -50,7 +50,7 @@ class NotionClient {
     private readonly client: Client = new Client({ auth: token, notionVersion }),
   ) {
     if (this.usePageContent && cacheOptions?.enabled === true) {
-      this.reporter.warn('Notion Database without page content will not be cached!');
+      this.reporter.warn(`Notion Database ${databaseId} without page content will not be cached!`);
     }
   }
 
