@@ -22,7 +22,8 @@ export const importNotionSource = async (notionPluginArgs: NodePluginArgs, optio
   const getPageProperties = pageToProperties(valueConverter, keyConverter);
 
   const pages = await notionClient.getPages();
-  pages.forEach(async (page) => {
+
+  for (const page of pages) {
     const title = getNotionPageTitle(page);
     const properties = getPageProperties(page);
     const slug = await notionClient.appendSlug(page, properties);
@@ -33,7 +34,7 @@ export const importNotionSource = async (notionPluginArgs: NodePluginArgs, optio
       markdown = '---\n'.concat(YAML.stringify(properties)).concat('\n---\n\n').concat(markdown);
     }
 
-    actions.createNode({
+    await actions.createNode({
       id: createNodeId(`${NODE_TYPE}-${databaseId}-${page.id}`),
       title,
       properties,
@@ -53,5 +54,5 @@ export const importNotionSource = async (notionPluginArgs: NodePluginArgs, optio
         contentDigest: createContentDigest(page),
       },
     });
-  });
+  }
 };
