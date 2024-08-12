@@ -99,7 +99,7 @@ class NotionClient {
     if (this.cacheEnabled) {
       if (blocksFromNotion.some((block) => block.type === 'child_page')) {
         const warningMessage =
-          'Page with child page will not be cached! Changes of child page will not affect last_changed_time of parent page.';
+          'Block with child page will not be cached! Changes of child page will not affect last_changed_time of parent page.';
         this.reporter.warn(warningMessage);
       } else {
         this.cacheWrapper.setBlocksToCache(
@@ -124,7 +124,17 @@ class NotionClient {
       ...result,
       children: this.usePageContent ? await this.getBlocks(result.id, lastEditedTime) : [],
     };
-    if (this.cacheEnabled) this.cacheWrapper.setPageToCache(pageFromNotion);
+
+
+    if (this.cacheEnabled) {
+      if (pageFromNotion.children.some((block) => block.type === 'child_page')) {
+        const warningMessage =
+          'Page with child page will not be cached! Changes of child page will not affect last_changed_time of parent page.';
+        this.reporter.warn(warningMessage);
+      } else {
+        this.cacheWrapper.setPageToCache(pageFromNotion);
+      }
+    }
 
     return pageFromNotion;
   }
