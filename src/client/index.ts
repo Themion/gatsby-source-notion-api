@@ -43,6 +43,7 @@ class NotionClient {
     private readonly filter = options.filter,
     private readonly reporter = nodePluginArgs.reporter,
     private readonly slugOptions: SlugOptions | null = options.slugOptions ?? null,
+    private readonly usePageContent = options.usePageContent ?? true,
     private readonly cacheEnabled = cacheOptions?.enabled ?? true,
 
     private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
@@ -106,7 +107,7 @@ class NotionClient {
 
     const pageFromNotion: Page = {
       ...result,
-      children: await this.getBlocks(result.id, lastEditedTime),
+      children: this.usePageContent ? await this.getBlocks(result.id, lastEditedTime) : [],
     };
     if (this.cacheEnabled) this.cacheWrapper.setPageToCache(pageFromNotion);
 

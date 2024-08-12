@@ -157,6 +157,7 @@ export type Options = {
   filter?: NonNullable<QueryDatabaseParameters['filter']>;
   propsToFrontmatter?: boolean;
   lowerTitleLevel?: boolean;
+  usePageContent?: boolean;
   devServerRefreshInterval?: number;
   slugOptions?: SlugOptions;
   cacheOptions?: CacheOptions;
