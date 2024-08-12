@@ -19,6 +19,7 @@ const notionSourceOption = {
   token: process.env.NOTION_TOKEN,
   databaseId: process.env.NOTION_DATABASE,
   devServerRefreshInterval: 10000,
+  // usePageContent: false,
   keyConverter: ({ type, name }) => {
     if (type === "people") return "person"
     if (name === "slug_temp") return "slug"

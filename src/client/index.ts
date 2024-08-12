@@ -15,9 +15,7 @@ import {
   SlugOptions,
 } from '~/types';
 import {
-  getPromiseValue,
   getPropertyContent,
-  isFulfilled,
   isPageAccessible,
   isPropertyAccessible,
   isPropertySupported,
@@ -36,23 +34,22 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
   item.object === 'page';
 
 class NotionClient {
-  private readonly databaseId: string;
-  private readonly filter: QueryDatabaseParameters['filter'];
-  private readonly reporter: Reporter;
-  private readonly slugOptions: SlugOptions | null;
 
   constructor(
-    { reporter, cache }: NodePluginArgs,
-    { token, notionVersion = '2022-06-28', filter, databaseId, slugOptions, cacheOptions }: Options,
+    { cache, ...nodePluginArgs }: NodePluginArgs,
+    { token, notionVersion = '2022-06-28', cacheOptions, ...options }: Options,
+
+    private readonly databaseId = options.databaseId,
+    private readonly filter = options.filter,
+    private readonly reporter = nodePluginArgs.reporter,
+    private readonly slugOptions: SlugOptions | null = options.slugOptions ?? null,
+    private readonly usePageContent = options.usePageContent ?? true,
+    private readonly cacheEnabled = cacheOptions?.enabled ?? true,
+
     private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
     private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache, cacheOptions),
     private readonly client: Client = new Client({ auth: token, notionVersion }),
-    private readonly cacheEnabled = cacheOptions?.enabled ?? true,
   ) {
-    this.databaseId = databaseId;
-    this.filter = filter;
-    this.reporter = reporter;
-    this.slugOptions = slugOptions ?? null;
   }
 
   private getBlock(id: string): FetchNotionData<Block> {
@@ -62,25 +59,26 @@ class NotionClient {
         start_cursor: cursor ?? undefined,
       });
 
-      const blocks = await Promise.allSettled(
-        results
-          .filter(isPropertyAccessible)
-          .filter(isPropertySupported)
-          .map(
-            async (block): Promise<Block> => ({
-              ...block,
-              ...(block.has_children
-                ? {
-                    has_children: true,
-                    children: await this.getBlocks(block.id, new Date(block.last_edited_time)),
-                  }
-                : { has_children: false }),
-            }),
-          ),
-      );
+      const fetchedBlocks = results.filter(isPropertyAccessible).filter(isPropertySupported);
+
+      const blocks: Block[] = [];
+
+      for (const block of fetchedBlocks) {
+        blocks.push({
+          ...block,
+          ...(block.has_children
+            ? {
+                has_children: true,
+                children: await this.getBlocks(block.id, new Date(block.last_edited_time)),
+              }
+            : {
+                has_children: false,
+              }),
+        });
+      }
 
       return {
-        data: blocks.filter(isFulfilled).map(getPromiseValue),
+        data: blocks,
         nextCursor: next_cursor,
       };
     };
@@ -109,7 +107,7 @@ class NotionClient {
 
     const pageFromNotion: Page = {
       ...result,
-      children: await this.getBlocks(result.id, lastEditedTime),
+      children: this.usePageContent ? await this.getBlocks(result.id, lastEditedTime) : [],
     };
     if (this.cacheEnabled) this.cacheWrapper.setPageToCache(pageFromNotion);
 
@@ -124,15 +122,17 @@ class NotionClient {
         filter: this.filter,
       });
 
-      const fetchedPages: PromiseSettledResult<Page>[] = await Promise.allSettled(
-        results
-          .filter(isPageAccessible)
-          .filter(isPageObject)
-          .map((result) => this.getPageContent(result)),
-      );
+      const pageObjectResponse: PageObjectResponse[] = results
+        .filter(isPageAccessible)
+        .filter(isPageObject);
+      const pages: Page[] = [];
+
+      for (const pageObject of pageObjectResponse) {
+        pages.push(await this.getPageContent(pageObject));
+      }
 
       return {
-        data: fetchedPages.filter(isFulfilled).map(getPromiseValue),
+        data: pages,
         nextCursor: next_cursor,
       };
     };
