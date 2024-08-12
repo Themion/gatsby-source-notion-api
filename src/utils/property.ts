@@ -59,9 +59,9 @@ export const getPropertyContent = (
     case 'unique_id':
       return property.unique_id.number;
     case 'title':
-      return blockToString(property.title);
+      return blockToString(property.title, false);
     case 'rich_text':
-      return blockToString(property.rich_text);
+      return blockToString(property.rich_text, false);
     case 'number':
       return property.number;
     case 'select':
