@@ -93,7 +93,16 @@ class NotionClient {
     }
 
     const blocksFromNotion = await this.fetchWrapper.fetchAll(this.getBlock(id));
-    if (this.cacheEnabled) this.cacheWrapper.setBlocksToCache(id, blocksFromNotion);
+
+    if (this.cacheEnabled) {
+      if (blocksFromNotion.some(block => block.type === 'child_page')) {
+        const warningMessage = "Page with child page will not be cached! Changes of child page will not affect last_changed_time of parent page."
+        this.reporter.warn(warningMessage)
+      } else {
+        this.cacheWrapper.setBlocksToCache(id, blocksFromNotion.filter(block => block));
+      }
+    }
+
     return blocksFromNotion;
   }
 
