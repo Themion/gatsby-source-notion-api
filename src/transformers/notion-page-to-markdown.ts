@@ -1,6 +1,7 @@
 import { RichTextItemResponse } from '@notionhq/client/build/src/api-endpoints';
+import { NodePluginArgs } from 'gatsby';
 import { blockToString } from '~/block-to-string';
-import type { Block, Page } from '~/types';
+import type { Block, Options, Page } from '~/types';
 import { getBlockProperty } from '~/utils';
 import { childPageToHtml } from './child-page-to-html';
 import { getYoutubeUrl } from './get-youtube-url';
@@ -8,6 +9,8 @@ import { getYoutubeUrl } from './get-youtube-url';
 type BlockProperty = ReturnType<typeof getBlockProperty>;
 
 const BR = '<br>';
+const MEDIA_FILE_ERROR_MESSAGE =
+  'Media file stored in Notion will last only for 1 hour! Consider using link embed, or disable gatsby cache.';
 
 const notionBlockComment = (
   block: Block,
@@ -39,13 +42,16 @@ const getBlockMarkdown = (block: Block): RichTextItemResponse[] => {
 // Converts a notion block to a markdown string.
 const notionBlockToMarkdown = (
   block: Block,
-  lowerTitleLevel: boolean,
+  nodePluginArgs: NodePluginArgs,
+  options: Options,
   parentBlock: Block | null = null,
 ): string => {
+  const { lowerTitleLevel = true } = options;
+
   const childMarkdown =
     block.has_children === true
       ? block.children
-          .map((child) => notionBlockToMarkdown(child, lowerTitleLevel, block))
+          .map((child) => notionBlockToMarkdown(child, nodePluginArgs, options, block))
           .join('\n\n')
           .trim()
       : '';
@@ -53,11 +59,15 @@ const notionBlockToMarkdown = (
   // Extract the remaining content of the block and combine it with its children.
   const blockMarkdown = blockToString(getBlockMarkdown(block), block.type !== 'code')
     .trim()
-    .replaceAll('\n', BR);
+    .replaceAll('\n', block.type === 'code' ? BR : '\n');
   const blockClass = htmlClass(block.type);
 
   switch (block.type) {
     case 'audio':
+      if (block.audio.type === 'file' && options.cacheOptions?.enabled) {
+        nodePluginArgs.reporter.panicOnBuild(MEDIA_FILE_ERROR_MESSAGE);
+        throw MEDIA_FILE_ERROR_MESSAGE;
+      }
       const audioUrl =
         block.audio.type == 'external' ? block.audio.external.url : block.audio.file.url;
       return `<audio ${blockClass} controls><source src="${audioUrl}" /></audio>`;
@@ -91,6 +101,10 @@ const notionBlockToMarkdown = (
       const headingContent = blockMarkdown === '' ? BR : blockMarkdown;
       return `${headingSymbol} ${headingContent}`;
     case 'image':
+      if (block.image.type === 'file' && options.cacheOptions?.enabled) {
+        nodePluginArgs.reporter.panicOnBuild(MEDIA_FILE_ERROR_MESSAGE);
+        throw MEDIA_FILE_ERROR_MESSAGE;
+      }
       const imageUrl =
         block.image.type == 'external' ? block.image.external.url : block.image.file.url;
       const caption = blockToString(block.image.caption);
@@ -126,6 +140,10 @@ const notionBlockToMarkdown = (
       const summaryClass = htmlClass('summary');
       return `<details ${detailsClass}><summary ${summaryClass}>${blockMarkdown}</summary>${childMarkdown}</details>`;
     case 'video':
+      if (block.video.type === 'file' && options.cacheOptions?.enabled) {
+        nodePluginArgs.reporter.panicOnBuild(MEDIA_FILE_ERROR_MESSAGE);
+        throw MEDIA_FILE_ERROR_MESSAGE;
+      }
       const url = block.video.type === 'external' ? block.video.external.url : block.video.file.url;
       const videoCaption = blockToString(block.video.caption).trim();
       if (block.video.type === 'file')
@@ -151,9 +169,13 @@ const notionBlockToMarkdown = (
   }
 };
 
-export const notionPageToMarkdown = (page: Page, lowerTitleLevel: boolean) =>
+export const notionPageToMarkdown = (
+  page: Page,
+  nodePluginArgs: NodePluginArgs,
+  options: Options,
+) =>
   page.children
-    .map((child) => notionBlockToMarkdown(child, lowerTitleLevel))
+    .map((child) => notionBlockToMarkdown(child, nodePluginArgs, options))
     .join('\n\n')
     .replaceAll('</ul>\n\n<ul>', '')
     .replaceAll('</ol>\n\n<ol>', '')

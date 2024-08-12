@@ -12,7 +12,6 @@ export const importNotionSource = async (notionPluginArgs: NodePluginArgs, optio
   const {
     databaseId,
     propsToFrontmatter = true,
-    lowerTitleLevel = true,
     keyConverter = ({ name }) => name.replaceAll(' ', '_'),
     valueConverter = ({ value }) => value,
   } = options;
@@ -28,7 +27,7 @@ export const importNotionSource = async (notionPluginArgs: NodePluginArgs, optio
     const properties = getPageProperties(page);
     const slug = await notionClient.appendSlug(page, properties);
 
-    let markdown = notionPageToMarkdown(page, lowerTitleLevel);
+    let markdown = notionPageToMarkdown(page, notionPluginArgs, options);
 
     if (propsToFrontmatter) {
       markdown = '---\n'.concat(YAML.stringify(properties)).concat('\n---\n\n').concat(markdown);

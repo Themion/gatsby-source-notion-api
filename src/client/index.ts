@@ -34,22 +34,24 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
   item.object === 'page';
 
 class NotionClient {
-
   constructor(
     { cache, ...nodePluginArgs }: NodePluginArgs,
-    { token, notionVersion = '2022-06-28', cacheOptions, ...options }: Options,
+    { token, notionVersion = '2022-06-28', cacheOptions = { enabled: true }, ...options }: Options,
 
     private readonly databaseId = options.databaseId,
     private readonly filter = options.filter,
     private readonly reporter = nodePluginArgs.reporter,
     private readonly slugOptions: SlugOptions | null = options.slugOptions ?? null,
     private readonly usePageContent = options.usePageContent ?? true,
-    private readonly cacheEnabled = cacheOptions?.enabled ?? true,
+    private readonly cacheEnabled = this.usePageContent ? cacheOptions.enabled : false,
 
     private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
     private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache, cacheOptions),
     private readonly client: Client = new Client({ auth: token, notionVersion }),
   ) {
+    if (this.usePageContent && cacheOptions?.enabled === true) {
+      this.reporter.warn(`Notion Database ${databaseId} without page content will not be cached!`);
+    }
   }
 
   private getBlock(id: string): FetchNotionData<Block> {
@@ -93,7 +95,20 @@ class NotionClient {
     }
 
     const blocksFromNotion = await this.fetchWrapper.fetchAll(this.getBlock(id));
-    if (this.cacheEnabled) this.cacheWrapper.setBlocksToCache(id, blocksFromNotion);
+
+    if (this.cacheEnabled) {
+      if (blocksFromNotion.some((block) => block.type === 'child_page')) {
+        const warningMessage =
+          'Block with child page will not be cached! Changes of child page will not affect last_changed_time of parent page.';
+        this.reporter.warn(warningMessage);
+      } else {
+        this.cacheWrapper.setBlocksToCache(
+          id,
+          blocksFromNotion.filter((block) => block),
+        );
+      }
+    }
+
     return blocksFromNotion;
   }
 
@@ -109,7 +124,17 @@ class NotionClient {
       ...result,
       children: this.usePageContent ? await this.getBlocks(result.id, lastEditedTime) : [],
     };
-    if (this.cacheEnabled) this.cacheWrapper.setPageToCache(pageFromNotion);
+
+
+    if (this.cacheEnabled) {
+      if (pageFromNotion.children.some((block) => block.type === 'child_page')) {
+        const warningMessage =
+          'Page with child page will not be cached! Changes of child page will not affect last_changed_time of parent page.';
+        this.reporter.warn(warningMessage);
+      } else {
+        this.cacheWrapper.setPageToCache(pageFromNotion);
+      }
+    }
 
     return pageFromNotion;
   }
