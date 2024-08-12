@@ -7,4 +7,4 @@ const getTitleProperty = (properties: Page['properties']) =>
   Object.values(properties).find(({ type }) => type === 'title') as TitleProperty | undefined;
 
 export const getNotionPageTitle = (page: Page) =>
-  blockToString(getTitleProperty(page.properties)?.title ?? []);
+  (getTitleProperty(page.properties)?.title.map(({ plain_text }) => plain_text) ?? []).join('');
