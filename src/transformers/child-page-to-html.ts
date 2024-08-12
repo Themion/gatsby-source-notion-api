@@ -1,14 +1,13 @@
 import { RichTextItemResponse } from '@notionhq/client/build/src/api-endpoints';
 import type { Block } from '~/types';
 
-const richTextToCode = (blockList: RichTextItemResponse[], slot: string) =>
+const richTextToCode = (blockList: RichTextItemResponse[]) =>
   blockList
     .map(({ plain_text }) => plain_text)
-    .join()
-    .replaceAll('{slot}', slot);
+    .join();
 
-const childBlockToHtml = (slot: string) => (childBlock: Extract<Block, { type: 'code' }>) => {
-  const code = richTextToCode(childBlock.code.rich_text, slot);
+const childBlockToHtml = (childBlock: Extract<Block, { type: 'code' }>) => {
+  const code = richTextToCode(childBlock.code.rich_text);
   switch (childBlock.code.language) {
     case 'markdown':
     case 'html':
@@ -27,6 +26,6 @@ export const childPageToHtml = (
 ) =>
   block.children
     .filter((childBlock) => childBlock.type === 'code')
-    .map(childBlockToHtml(block.child_page.title))
+    .map(childBlockToHtml)
     .filter((text) => text !== null)
     .join('\n');
