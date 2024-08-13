@@ -80,10 +80,10 @@ export const getPropertyContent = (
         .map(getPropertyContentFromUser)
         .filter((user) => !!user);
     case 'files':
-      return property.files.map((file) => ({
-        name: file.name,
-        url: getPropertyContentFromFile(file),
-      }));
+      return property.files.map((file) => {
+        const url = getPropertyContentFromFile(file, reporter);
+        return url === null ? null : { name: file.name, url }
+      }).filter(file => file !== null);
     case 'checkbox':
       return property.checkbox;
     case 'url':
@@ -93,7 +93,7 @@ export const getPropertyContent = (
     case 'phone_number':
       return property.phone_number;
     case 'formula':
-      return getPropertyContentFromFormula(property.formula);
+      return getPropertyContentFromFormula(property.formula, reporter);
     case 'rollup':
       return getPropertyContentFromRollup(property.rollup, reporter);
     case 'created_by':
@@ -115,13 +115,16 @@ export const getPropertyContent = (
  * @param file a file property returned from Notion API
  * @returns its url
  */
-export function getPropertyContentFromFile(file: NotionAPIFile): string {
-  if (file.type === 'external') {
-    return file.external.url;
-  } else if (file.type === 'file') {
-    return file.file.url;
-  } else {
-    throw new TypeError(`unknown file type`);
+export function getPropertyContentFromFile(file: NotionAPIFile, reporter: Reporter): string | null {
+  const type = file.type;
+  switch (file.type) {
+    case 'external':
+      return file.external.url;
+    case 'file':
+      return file.file.url;
+    default:
+      reporter.warn(`Unknown file type ${type} detected! Please issue this at https://github.com/Themion/gatsby-source-notion-api`);
+      return null;
   }
 }
 
@@ -132,7 +135,9 @@ export function getPropertyContentFromFile(file: NotionAPIFile): string {
  */
 export function getPropertyContentFromFormula(
   formula: Extract<NotionAPIPropertyValue, { type: 'formula' }>['formula'],
+  reporter: Reporter
 ): NormalizedValue {
+  const type: string = formula.type
   switch (formula.type) {
     case 'string':
       return formula.string;
@@ -144,7 +149,8 @@ export function getPropertyContentFromFormula(
       return formula.date;
     /* istanbul ignore next */
     default:
-      throw new TypeError(`unknown formula property`);
+      reporter.warn(`Unknown formula type ${type} detected! Please issue this at https://github.com/Themion/gatsby-source-notion-api`);
+      return null;
   }
 }
 
@@ -157,6 +163,7 @@ export function getPropertyContentFromRollup(
   rollup: Extract<NotionAPIPropertyValue, { type: 'rollup' }>['rollup'],
   reporter: Reporter,
 ): NormalizedValue {
+  const type: string = rollup.type
   switch (rollup.type) {
     case 'number':
       return rollup.number;
@@ -166,7 +173,8 @@ export function getPropertyContentFromRollup(
       return rollup.array.map((item) => getPropertyContent(item, reporter));
     /* istanbul ignore next */
     default:
-      throw new TypeError(`unknown rollup property`);
+      reporter.warn(`Unknown rollup type ${type} detected! Please issue this at https://github.com/Themion/gatsby-source-notion-api`);
+      return null;
   }
 }
 
