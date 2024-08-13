@@ -1,5 +1,5 @@
 import { RichTextItemResponse } from '@notionhq/client/build/src/api-endpoints';
-import { NodePluginArgs } from 'gatsby';
+import { NodePluginArgs, Reporter } from 'gatsby';
 import { blockToString } from '~/block-to-string';
 import type { Block, Options, Page } from '~/types';
 import { getBlockProperty } from '~/utils';
@@ -14,9 +14,10 @@ const MEDIA_FILE_ERROR_MESSAGE =
 
 const notionBlockComment = (
   block: Block,
+  reporter: Reporter,
   comment: string = `Block type '${block.type}' is not supported yet.`,
 ) => {
-  console.warn(comment);
+  reporter.warn(comment);
   return `<!-- ${comment} -->`;
 };
 
@@ -81,7 +82,6 @@ const notionBlockToMarkdown = (
       if (block.has_children) return childPageToHtml(block);
       return '';
     case 'code':
-      console.log(`\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\``);
       return `\`\`\`${block.code.language}\n${blockMarkdown}\n\`\`\``;
     case 'column':
       return `<div ${blockClass}>${childMarkdown}</div>`;
@@ -161,12 +161,13 @@ const notionBlockToMarkdown = (
 
       return notionBlockComment(
         block,
+        nodePluginArgs.reporter,
         `External video (${url}) is not supported yet: please upload video file directly or to youtube.`,
       );
 
     // TODO: Add support for callouts, and files
     default:
-      return notionBlockComment(block);
+      return notionBlockComment(block, nodePluginArgs.reporter);
   }
 };
 
