@@ -53,6 +53,13 @@ export function isPageAccessible<
   return !!page.url;
 }
 
+const warnUnknwonPropertyType = (propertyType: string, propertyDetailType: string, reporter: Reporter) => {
+  const errorMessage =
+    `Unknown ${propertyType} type ${propertyDetailType} detected! Please issue this at https://github.com/Themion/gatsby-source-notion-api`;
+  reporter.warn(errorMessage);
+  return null;
+}
+
 export const getPropertyContent = (
   property: NotionAPIPropertyValueWithoutID<NotionAPIPropertyValue>,
   reporter: Reporter
@@ -123,8 +130,7 @@ export function getPropertyContentFromFile(file: NotionAPIFile, reporter: Report
     case 'file':
       return file.file.url;
     default:
-      reporter.warn(`Unknown file type ${type} detected! Please issue this at https://github.com/Themion/gatsby-source-notion-api`);
-      return null;
+      return warnUnknwonPropertyType('file', type ?? 'undefined', reporter);
   }
 }
 
@@ -149,8 +155,7 @@ export function getPropertyContentFromFormula(
       return formula.date;
     /* istanbul ignore next */
     default:
-      reporter.warn(`Unknown formula type ${type} detected! Please issue this at https://github.com/Themion/gatsby-source-notion-api`);
-      return null;
+      return warnUnknwonPropertyType('formula', type, reporter);
   }
 }
 
@@ -173,8 +178,7 @@ export function getPropertyContentFromRollup(
       return rollup.array.map((item) => getPropertyContent(item, reporter));
     /* istanbul ignore next */
     default:
-      reporter.warn(`Unknown rollup type ${type} detected! Please issue this at https://github.com/Themion/gatsby-source-notion-api`);
-      return null;
+      return warnUnknwonPropertyType('rollup', type, reporter);
   }
 }
 
