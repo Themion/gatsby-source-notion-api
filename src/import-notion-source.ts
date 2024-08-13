@@ -8,7 +8,7 @@ import { notionPageToMarkdown } from '~/transformers/notion-page-to-markdown';
 import type { Options } from '~/types';
 
 export const importNotionSource = async (notionPluginArgs: NodePluginArgs, options: Options) => {
-  const { actions, createContentDigest, createNodeId } = notionPluginArgs;
+  const { actions, createContentDigest, createNodeId, reporter } = notionPluginArgs;
   const {
     databaseId,
     propsToFrontmatter = true,
@@ -18,7 +18,7 @@ export const importNotionSource = async (notionPluginArgs: NodePluginArgs, optio
 
   const notionClient = new NotionClient(notionPluginArgs, options);
 
-  const getPageProperties = pageToProperties(valueConverter, keyConverter);
+  const getPageProperties = pageToProperties(valueConverter, keyConverter, reporter);
 
   const pages = await notionClient.getPages();
 

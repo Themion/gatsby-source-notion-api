@@ -1,3 +1,4 @@
+import { Reporter } from 'gatsby';
 import { blockToString } from '~/block-to-string';
 import type {
   InaccessibleNotionAPIUser,
@@ -54,6 +55,7 @@ export function isPageAccessible<
 
 export const getPropertyContent = (
   property: NotionAPIPropertyValueWithoutID<NotionAPIPropertyValue>,
+  reporter: Reporter
 ): NormalizedValue => {
   switch (property.type) {
     case 'unique_id':
@@ -93,7 +95,7 @@ export const getPropertyContent = (
     case 'formula':
       return getPropertyContentFromFormula(property.formula);
     case 'rollup':
-      return getPropertyContentFromRollup(property.rollup);
+      return getPropertyContentFromRollup(property.rollup, reporter);
     case 'created_by':
       return getPropertyContentFromUser(property.created_by);
     case 'created_time':
@@ -103,7 +105,7 @@ export const getPropertyContent = (
     case 'last_edited_time':
       return property.last_edited_time;
     default:
-      console.warn(`Property type '${property.type}' is not supported yet.`);
+      reporter.warn(`Property type '${property.type}' is not supported yet.`);
       return null;
   }
 };
@@ -153,6 +155,7 @@ export function getPropertyContentFromFormula(
  */
 export function getPropertyContentFromRollup(
   rollup: Extract<NotionAPIPropertyValue, { type: 'rollup' }>['rollup'],
+  reporter: Reporter,
 ): NormalizedValue {
   switch (rollup.type) {
     case 'number':
@@ -160,7 +163,7 @@ export function getPropertyContentFromRollup(
     case 'date':
       return rollup.date;
     case 'array':
-      return rollup.array.map((item) => getPropertyContent(item));
+      return rollup.array.map((item) => getPropertyContent(item, reporter));
     /* istanbul ignore next */
     default:
       throw new TypeError(`unknown rollup property`);
