@@ -228,7 +228,7 @@ class NotionClient {
     }
 
     page.properties[notionKey] = result;
-    properties[key] = getPropertyContent(result);
+    properties[key] = getPropertyContent(result, this.reporter);
     this.reporter.info(`Updated slug for page ${pageId}!`);
 
     return value;
