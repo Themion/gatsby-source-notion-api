@@ -52,7 +52,7 @@ const annotateBold = ifTrue(pick('bold'), ({ content, ...data }) => ({
 }));
 const annotateItalic = ifTrue(pick('italic'), ({ content, ...data }) => ({
   ...data,
-  content: `<em>${content}</em>`,
+  content: `<i>${content}</i>`,
 }));
 const annotateUnderline = ifTrue(pick('underline'), ({ content, ...data }) => ({
   ...data,
