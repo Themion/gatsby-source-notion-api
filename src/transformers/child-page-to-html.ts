@@ -1,11 +1,8 @@
-import { RichTextItemResponse } from '@notionhq/client/build/src/api-endpoints';
+import { blockToString } from '~/block-to-string';
 import type { Block } from '~/types';
 
-const richTextToCode = (blockList: RichTextItemResponse[]) =>
-  blockList.map(({ plain_text }) => plain_text).join('');
-
 const childBlockToHtml = (childBlock: Extract<Block, { type: 'code' }>) => {
-  const code = richTextToCode(childBlock.code.rich_text);
+  const code = blockToString(childBlock.code.rich_text, false);
   switch (childBlock.code.language) {
     case 'markdown':
     case 'html':
