@@ -98,17 +98,22 @@ const getRichTextContent = (block: RichTextItemResponse): string => {
   }
 };
 
-const getRichTextHtml = (textBlock: RichTextItemResponse, escape: boolean): string => {
+const getRichTextHtml = (textBlock: RichTextItemResponse, useHtml: boolean): string => {
   const content = getRichTextContent(textBlock);
   const data: TextInfo = {
     ...textBlock.annotations,
     equation: textBlock.type === 'equation',
     link: textBlock.type === 'text' ? textBlock.text.link : null,
-    content: escape ? escapeHtml(content) : content,
+    content: useHtml ? escapeHtml(content) : content,
   };
 
   return stylize(data).content;
 };
 
-export const blockToString = (textBlocks: RichTextItemResponse[], escape: boolean = true): string =>
-  textBlocks.map((block) => getRichTextHtml(block, escape)).join('');
+export const blockToString = (
+  textBlocks: RichTextItemResponse[],
+  useHtml: boolean = true,
+): string =>
+  textBlocks
+    .map((block) => (useHtml ? getRichTextHtml(block, useHtml) : block.plain_text))
+    .join('');
