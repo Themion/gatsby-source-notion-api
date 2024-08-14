@@ -2,9 +2,8 @@ import { Client } from '@notionhq/client';
 import {
   DatabaseObjectResponse,
   PageObjectResponse,
-  QueryDatabaseParameters,
 } from '@notionhq/client/build/src/api-endpoints';
-import { NodePluginArgs, Reporter } from 'gatsby';
+import { NodePluginArgs } from 'gatsby';
 import {
   Block,
   FetchNotionData,
@@ -49,7 +48,7 @@ class NotionClient {
     private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache, cacheOptions),
     private readonly client: Client = new Client({ auth: token, notionVersion }),
   ) {
-    if (this.usePageContent && cacheOptions?.enabled === true) {
+    if (!this.usePageContent && cacheOptions?.enabled === true) {
       this.reporter.warn(`Notion Database ${databaseId} without page content will not be cached!`);
     }
   }
@@ -124,7 +123,6 @@ class NotionClient {
       ...result,
       children: this.usePageContent ? await this.getBlocks(result.id, lastEditedTime) : [],
     };
-
 
     if (this.cacheEnabled) {
       if (pageFromNotion.children.some((block) => block.type === 'child_page')) {
