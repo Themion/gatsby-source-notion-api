@@ -7,6 +7,7 @@ import { childPageToHtml } from './child-page-to-html';
 import { getYoutubeUrl } from './get-youtube-url';
 
 type BlockProperty = ReturnType<typeof getBlockProperty>;
+type ApiColor = Extract<Block, { type: 'paragraph' }>['paragraph']['color'];
 
 const BR = '<br>';
 const MEDIA_FILE_ERROR_MESSAGE =
@@ -22,6 +23,7 @@ const notionBlockComment = (
 };
 
 const htmlClass = (classname: string) => `class="notion-${classname.replaceAll('_', '-')}-block"`;
+const notionColor = (color: ApiColor) => (color === 'default' ? '' : `notion-color="${color}"`);
 
 const captionize = (content: string, caption: string = '') => {
   const figureClass = htmlClass('figure');
@@ -77,7 +79,7 @@ const notionBlockToMarkdown = (
       const bookmarkCaption = blockToString(block.bookmark.caption) || bookmarkUrl;
       return `[${bookmarkCaption}](${block.bookmark.url})`;
     case 'bulleted_list_item':
-      return `<ul><li>${blockMarkdown}</li></ul>`;
+      return `<ul><li ${notionColor(block.bulleted_list_item.color)}>${blockMarkdown}</li></ul>`;
     case 'child_page':
       if (block.has_children) return childPageToHtml(block);
       return '';
@@ -97,10 +99,21 @@ const notionBlockToMarkdown = (
     case 'heading_1':
     case 'heading_2':
     case 'heading_3':
-      const headingLevel = parseInt(block.type.split('_')[1], 10);
-      const headingSymbol = (lowerTitleLevel ? '#' : '') + '#'.repeat(headingLevel);
+      const headingLevel = parseInt(block.type.split('_')[1], 10) + (lowerTitleLevel ? 1 : 0);
       const headingContent = blockMarkdown === '' ? BR : blockMarkdown;
-      return `${headingSymbol} ${headingContent}`;
+      const headingColor: ApiColor = (() => {
+        switch (block.type) {
+          case 'heading_1':
+            return block.heading_1.color;
+          case 'heading_2':
+            return block.heading_2.color;
+          case 'heading_3':
+            return block.heading_3.color;
+        }
+      })();
+      return `<h${headingLevel} ${notionColor(
+        headingColor,
+      )}}>${headingContent}</<h${headingLevel}>`;
     case 'image':
       if (block.image.type === 'file' && options.cacheOptions?.enabled) {
         nodePluginArgs.reporter.panicOnBuild(MEDIA_FILE_ERROR_MESSAGE);
@@ -111,11 +124,13 @@ const notionBlockToMarkdown = (
       const caption = blockToString(block.image.caption);
       return `<figure><img src="${imageUrl}" alt="${caption}"><figcaption>${caption}</figcaption></figure>`;
     case 'numbered_list_item':
-      return `<ol><li>${blockMarkdown}</li></ol>`;
+      return `<ol><li ${notionColor(block.numbered_list_item.color)}>${blockMarkdown}</li></ol>`;
     case 'paragraph':
-      return blockMarkdown === '' ? BR : blockMarkdown;
+      return `<p ${notionColor(block.paragraph.color)}>${
+        blockMarkdown === '' ? BR : blockMarkdown
+      }</p>`;
     case 'quote':
-      return `<blockquote>${blockMarkdown}</blockquote>`;
+      return `<blockquote ${notionColor(block.quote.color)}>${blockMarkdown}</blockquote>`;
     case 'table':
       const tableContent = childMarkdown.replaceAll(/\n+/g, '\n');
       const table = `<table>\n${tableContent}\n</table>`;
@@ -139,7 +154,8 @@ const notionBlockToMarkdown = (
     case 'toggle':
       const detailsClass = htmlClass('details');
       const summaryClass = htmlClass('summary');
-      return `<details ${detailsClass}><summary ${summaryClass}>${blockMarkdown}</summary>${childMarkdown}</details>`;
+      const toggleColor = notionColor(block.toggle.color);
+      return `<details ${toggleColor} ${detailsClass}><summary ${summaryClass}>${blockMarkdown}</summary>${childMarkdown}</details>`;
     case 'video':
       if (block.video.type === 'file' && options.cacheOptions?.enabled) {
         nodePluginArgs.reporter.panicOnBuild(MEDIA_FILE_ERROR_MESSAGE);
