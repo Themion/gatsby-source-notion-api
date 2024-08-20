@@ -111,7 +111,7 @@ const notionBlockToMarkdown = (
             return block.heading_3.color;
         }
       })();
-      return `<h${headingLevel} ${notionColor(headingColor)}>${headingContent}</<h${headingLevel}>`;
+      return `<h${headingLevel} ${notionColor(headingColor)}>${headingContent}</h${headingLevel}>`;
     case 'image':
       if (block.image.type === 'file' && options.cacheOptions?.enabled) {
         nodePluginArgs.reporter.panicOnBuild(MEDIA_FILE_ERROR_MESSAGE);
