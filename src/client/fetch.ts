@@ -1,10 +1,14 @@
-import { APIErrorCode, isNotionClientError } from '@notionhq/client';
+import { APIErrorCode, Client, isNotionClientError } from '@notionhq/client';
 import { Reporter } from 'gatsby';
-import { FetchNotionData } from '~/types';
-import { wait } from '~/utils';
+import { FetchNotionData, Options } from '~/types';
+import { mapAwaited, wait } from '~/utils';
 
 class FetchWrapper {
-  constructor(private readonly reporter: Reporter) {}
+  constructor(
+    { token, notionVersion = '2022-06-28' }: Options,
+    private readonly reporter: Reporter,
+    private readonly client: Client = new Client({ auth: token, notionVersion }),
+  ) {}
 
   async waitAndLogWithNotionError(error: unknown) {
     if (!isNotionClientError(error)) {
@@ -42,24 +46,39 @@ class FetchWrapper {
     throw error;
   }
 
-  async fetchWithErrorHandler<T>(fetch: () => T) {
+  async fetchWithErrorHandler<T>(fetch: (client: Client) => T) {
     do {
       try {
-        return await fetch();
+        return await fetch(this.client);
       } catch (error) {
         await this.waitAndLogWithNotionError(error);
       }
     } while (true);
   }
 
-  async fetchAll<T>(fetch: FetchNotionData<T>) {
-    const dataList: T[] = [];
+  async fetchAll<T, U extends T, V>(
+    fetchPartial: FetchNotionData<T>,
+    resultFilterer: (item: T) => item is U,
+    addContent: (item: U, index?: number, list?: U[]) => Promise<V>,
+    chunkSize?: number | undefined,
+    useReturnValue: boolean = true,
+  ): Promise<V[]> {
+    const dataList: V[] = [];
     let cursor: string | null = null;
 
     do {
-      const { nextCursor, data } = await this.fetchWithErrorHandler(() => fetch(cursor));
-      dataList.push(...data);
-      cursor = nextCursor;
+      const { results, next_cursor } = await this.fetchWithErrorHandler((client) =>
+        fetchPartial(client, cursor),
+      );
+
+      const filteredResults = results.filter(resultFilterer);
+      const mappedResults: V[] = await mapAwaited(
+        filteredResults,
+        addContent,
+        chunkSize ?? filteredResults.length,
+      );
+      if (useReturnValue) dataList.push(...mappedResults);
+      cursor = next_cursor;
     } while (cursor != null);
 
     return dataList;
