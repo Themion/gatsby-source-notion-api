@@ -1,3 +1,4 @@
+import { Client } from '@notionhq/client';
 import { QueryDatabaseParameters } from '@notionhq/client/build/src/api-endpoints';
 import type {
   NotionAPIBlock,
@@ -14,8 +15,9 @@ export * from './notion';
  */
 
 export type FetchNotionData<T> = (
+  client: Client,
   cursor: string | null,
-) => Promise<{ nextCursor: string | null; data: T[] }>;
+) => Promise<{ results: T[]; next_cursor: string | null }>;
 
 export type EntityWithUserDetail<E extends NotionAPIBlock | NotionAPIDatabase | NotionAPIPage> =
   E extends any
@@ -150,6 +152,11 @@ export type CacheOptions =
       maxAge?: number;
     };
 
+export type ChunkOptions = {
+  page?: number;
+  block?: number;
+};
+
 export type Options = {
   token: string;
   databaseId: string;
@@ -161,6 +168,7 @@ export type Options = {
   devServerRefreshInterval?: number;
   slugOptions?: SlugOptions;
   cacheOptions?: CacheOptions;
+  chunkOptions?: ChunkOptions;
   keyConverter?: KeyConverter;
   valueConverter?: ValueConverter;
 };
