@@ -35,7 +35,7 @@ const escapeHtml = (content: string) =>
 
 const annotateEquation = ifTrue(pick('equation'), ({ content, ...data }) => ({
   ...data,
-  content: `<img src="${equationUrl(content)}" alt="${content}"></img>`,
+  content: `<img loading="lazy" src="${equationUrl(content)}" alt="${content}"></img>`,
 }));
 const annotateLink = ifTrue(pick('link'), ({ content, link, ...data }) => ({
   ...data,
