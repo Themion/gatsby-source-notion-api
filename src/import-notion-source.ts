@@ -5,24 +5,18 @@ import { NODE_TYPE } from '~/constants';
 import { pageToProperties } from '~/transformers/get-page-properties';
 import { getNotionPageTitle } from '~/transformers/get-page-title';
 import { notionPageToMarkdown } from '~/transformers/notion-page-to-markdown';
-import type { Options } from '~/types';
+import type { Options, Page } from '~/types';
 
-export const importNotionSource = async (notionPluginArgs: NodePluginArgs, options: Options) => {
-  const { actions, createContentDigest, createNodeId, reporter } = notionPluginArgs;
-  const {
-    databaseId,
-    propsToFrontmatter = true,
-    keyConverter = ({ name }) => name.replaceAll(' ', '_'),
-    valueConverter = ({ value }) => value,
-  } = options;
+const createNodeClosure = (
+  notionPluginArgs: NodePluginArgs,
+  options: Options,
+  notionClient: NotionClient,
+  getPageProperties: ReturnType<typeof pageToProperties>,
+) => {
+  const { actions, createContentDigest, createNodeId } = notionPluginArgs;
+  const { databaseId, propsToFrontmatter = true } = options;
 
-  const notionClient = new NotionClient(notionPluginArgs, options);
-
-  const getPageProperties = pageToProperties(valueConverter, keyConverter, reporter);
-
-  const pages = await notionClient.getPages();
-
-  for (const page of pages) {
+  return async (page: Page) => {
     const title = getNotionPageTitle(page);
     const properties = getPageProperties(page);
     const slug = await notionClient.appendSlug(page, properties);
@@ -53,5 +47,20 @@ export const importNotionSource = async (notionPluginArgs: NodePluginArgs, optio
         contentDigest: createContentDigest(page),
       },
     });
-  }
+  };
+};
+
+export const importNotionSource = async (notionPluginArgs: NodePluginArgs, options: Options) => {
+  const { reporter } = notionPluginArgs;
+  const {
+    chunkOptions,
+    keyConverter = ({ name }) => name.replaceAll(' ', '_'),
+    valueConverter = ({ value }) => value,
+  } = options;
+
+  const notionClient = new NotionClient(notionPluginArgs, options);
+  const getPageProperties = pageToProperties(valueConverter, keyConverter, reporter);
+  const createNode = createNodeClosure(notionPluginArgs, options, notionClient, getPageProperties);
+
+  await notionClient.createPages(createNode);
 };

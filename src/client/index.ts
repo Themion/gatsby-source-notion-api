@@ -6,8 +6,8 @@ import {
 import { NodePluginArgs } from 'gatsby';
 import {
   Block,
-  FetchNotionData,
   NormalizedValue,
+  NotionAPIBlock,
   NotionAPIPage,
   Options,
   Page,
@@ -35,7 +35,7 @@ const isPageObject = (item: PageObjectResponse | DatabaseObjectResponse): item i
 class NotionClient {
   constructor(
     { cache, ...nodePluginArgs }: NodePluginArgs,
-    { token, notionVersion = '2022-06-28', cacheOptions = { enabled: true }, ...options }: Options,
+    { cacheOptions = { enabled: true }, chunkOptions = { block: 1 }, ...options }: Options,
 
     private readonly databaseId = options.databaseId,
     private readonly filter = options.filter,
@@ -43,48 +43,31 @@ class NotionClient {
     private readonly slugOptions: SlugOptions | null = options.slugOptions ?? null,
     private readonly usePageContent = options.usePageContent ?? true,
     private readonly cacheEnabled = this.usePageContent ? cacheOptions.enabled : false,
+    private readonly fetchChunkOptions = chunkOptions,
 
-    private readonly fetchWrapper: FetchWrapper = new FetchWrapper(reporter),
+    private readonly fetchWrapper: FetchWrapper = new FetchWrapper(
+      { ...options, cacheOptions, chunkOptions },
+      reporter,
+    ),
     private readonly cacheWrapper: CacheWrapper = new CacheWrapper(reporter, cache, cacheOptions),
-    private readonly client: Client = new Client({ auth: token, notionVersion }),
   ) {
     if (!this.usePageContent && cacheOptions?.enabled === true) {
       this.reporter.warn(`Notion Database ${databaseId} without page content will not be cached!`);
     }
   }
 
-  private getBlock(id: string): FetchNotionData<Block> {
-    const fetch = async (cursor: string | null) => {
-      const { results, next_cursor } = await this.client.blocks.children.list({
-        block_id: id,
-        start_cursor: cursor ?? undefined,
-      });
-
-      const fetchedBlocks = results.filter(isPropertyAccessible).filter(isPropertySupported);
-
-      const blocks: Block[] = [];
-
-      for (const block of fetchedBlocks) {
-        blocks.push({
-          ...block,
-          ...(block.has_children
-            ? {
-                has_children: true,
-                children: await this.getBlocks(block.id, new Date(block.last_edited_time)),
-              }
-            : {
-                has_children: false,
-              }),
-        });
-      }
-
-      return {
-        data: blocks,
-        nextCursor: next_cursor,
-      };
+  private async getBlockWithChildren(block: NotionAPIBlock): Promise<Block> {
+    return {
+      ...block,
+      ...(block.has_children
+        ? {
+            has_children: true,
+            children: await this.getBlocks(block.id, new Date(block.last_edited_time)),
+          }
+        : {
+            has_children: false,
+          }),
     };
-
-    return fetch.bind(this);
   }
 
   async getBlocks(id: string, lastEditedDate: Date) {
@@ -93,7 +76,16 @@ class NotionClient {
       if (cachedBlocks !== null) return cachedBlocks;
     }
 
-    const blocksFromNotion = await this.fetchWrapper.fetchAll(this.getBlock(id));
+    const blocksFromNotion = await this.fetchWrapper.fetchAll(
+      (client, cursor) =>
+        client.blocks.children.list({
+          block_id: id,
+          start_cursor: cursor ?? undefined,
+        }),
+      (result) => isPropertyAccessible(result) && isPropertySupported(result),
+      this.getBlockWithChildren.bind(this),
+      this.fetchChunkOptions?.block,
+    );
 
     if (this.cacheEnabled) {
       if (blocksFromNotion.some((block) => block.type === 'child_page')) {
@@ -137,41 +129,30 @@ class NotionClient {
     return pageFromNotion;
   }
 
-  private getPagesFromNotion(): FetchNotionData<Page> {
-    const fetch = async (cursor: string | null) => {
-      const { results, next_cursor } = await this.client.databases.query({
-        database_id: this.databaseId,
-        start_cursor: cursor ?? undefined,
-        filter: this.filter,
-      });
-
-      const pageObjectResponse: PageObjectResponse[] = results
-        .filter(isPageAccessible)
-        .filter(isPageObject);
-      const pages: Page[] = [];
-
-      for (const pageObject of pageObjectResponse) {
-        pages.push(await this.getPageContent(pageObject));
-      }
-
-      return {
-        data: pages,
-        nextCursor: next_cursor,
-      };
-    };
-
-    return fetch.bind(this);
-  }
-
-  async getPages(): Promise<Page[]> {
-    return await this.fetchWrapper.fetchAll(this.getPagesFromNotion());
+  async createPages(createPage: (page: Page) => unknown) {
+    await this.fetchWrapper.fetchAll(
+      (client, cursor) =>
+        client.databases.query({
+          database_id: this.databaseId,
+          start_cursor: cursor ?? undefined,
+          filter: this.filter,
+        }),
+      (result) => isPageAccessible(result) && isPageObject(result),
+      async (pageObject) => {
+        const page = await this.getPageContent.bind(this)(pageObject);
+        createPage(page);
+        return null;
+      },
+      this.fetchChunkOptions.page,
+      false,
+    );
   }
 
   private async updatePageSlug({ pageId, key, value, url }: UpdatePageOption) {
     const link = url ? { url } : null;
 
-    const fetch = async () => {
-      const updateResult = await this.client.pages.update({
+    const fetch = async (client: Client) => {
+      const updateResult = await client.pages.update({
         page_id: pageId,
         properties: {
           [key]: {
@@ -180,14 +161,6 @@ class NotionClient {
               {
                 type: 'text',
                 text: { content: value, link },
-                annotations: {
-                  bold: false,
-                  italic: false,
-                  strikethrough: false,
-                  underline: false,
-                  code: false,
-                  color: 'default',
-                },
               },
             ],
           },
@@ -197,7 +170,7 @@ class NotionClient {
       return isPageAccessible(updateResult) ? updateResult.properties[key] : null;
     };
 
-    return this.fetchWrapper.fetchWithErrorHandler(fetch.bind(this));
+    return this.fetchWrapper.fetchWithErrorHandler(fetch);
   }
 
   async appendSlug(page: Page, properties: Record<string, NormalizedValue>) {
