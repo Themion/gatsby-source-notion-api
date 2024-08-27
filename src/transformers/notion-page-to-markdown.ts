@@ -119,11 +119,9 @@ const notionBlockToMarkdown = (
       }
       const imageUrl =
         block.image.type == 'external' ? block.image.external.url : block.image.file.url;
-      const imageExt = imageUrl.split('.').at(-1) ?? imageUrl;
       const caption = blockToString(block.image.caption);
-      return ['gif'].includes(imageExt)
-        ? `<figure><img loading="lazy" src="${imageUrl}" alt="${caption}"><figcaption>${caption}</figcaption></figure>`
-        : `![${caption}](${imageUrl})`;
+      const figcaption = caption === '' ? '' : `<figcaption>${caption}</figcaption>`;
+      return `<figure><img loading="lazy" src="${imageUrl}" alt="${caption}">${figcaption}</figure>`;
     case 'numbered_list_item':
       return `<ol><li ${notionColor(block.numbered_list_item.color)}>${blockMarkdown}</li></ol>`;
     case 'paragraph':
