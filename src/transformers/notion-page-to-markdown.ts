@@ -79,7 +79,9 @@ const notionBlockToMarkdown = (
       const bookmarkCaption = blockToString(block.bookmark.caption) || bookmarkUrl;
       return `[${bookmarkCaption}](${block.bookmark.url})`;
     case 'bulleted_list_item':
-      return `<ul><li ${notionColor(block.bulleted_list_item.color)}>${blockMarkdown}</li></ul>`;
+      return `<ul><li ${notionColor(block.bulleted_list_item.color)}>${blockMarkdown}${childMarkdown}</li></ul>`;
+    case 'callout':
+      return `<div ${htmlClass('callout')}>${blockMarkdown}${childMarkdown}</div>`
     case 'child_page':
       if (block.has_children) return childPageToHtml(block);
       return '';
@@ -123,13 +125,11 @@ const notionBlockToMarkdown = (
       const figcaption = caption === '' ? '' : `<figcaption>${caption}</figcaption>`;
       return `<figure><img loading="lazy" src="${imageUrl}" alt="${caption}">${figcaption}</figure>`;
     case 'numbered_list_item':
-      return `<ol><li ${notionColor(block.numbered_list_item.color)}>${blockMarkdown}</li></ol>`;
+      return `<ol><li ${notionColor(block.numbered_list_item.color)}>${blockMarkdown}${childMarkdown}</li></ol>`;
     case 'paragraph':
-      return `<p ${notionColor(block.paragraph.color)}>${
-        blockMarkdown === '' ? BR : blockMarkdown
-      }</p>`;
+      return `<p ${notionColor(block.paragraph.color)}>${blockMarkdown === '' ? BR : blockMarkdown}</p>`;
     case 'quote':
-      return `<blockquote ${notionColor(block.quote.color)}>${blockMarkdown}</blockquote>`;
+      return `<blockquote ${notionColor(block.quote.color)}>${blockMarkdown}${childMarkdown}</blockquote>`;
     case 'table':
       const tableContent = childMarkdown.replaceAll(/\n+/g, '\n');
       const table = `<table>\n${tableContent}\n</table>`;
@@ -149,7 +149,8 @@ const notionBlockToMarkdown = (
       return `<tr>${cells.join('')}</tr>`;
     case 'to_do':
       const checked = block.to_do.checked ? 'checked' : '';
-      return `<input type="checkbox" ${checked} disabled>${blockMarkdown}</input>`;
+      const todoChildMarkdown = childMarkdown.split('\n\n').map((markdown) => `<div>${markdown}</div>`).join('')
+      return `<div ${htmlClass('todo')}><input type="checkbox" ${checked} disabled>${blockMarkdown}${todoChildMarkdown}</div>`;
     case 'toggle':
       const detailsClass = htmlClass('details');
       const summaryClass = htmlClass('summary');
@@ -179,7 +180,6 @@ const notionBlockToMarkdown = (
         nodePluginArgs.reporter,
         `External video (${url}) is not supported yet: please upload video file directly or to youtube.`,
       );
-
     // TODO: Add support for callouts, and files
     default:
       return notionBlockComment(block, nodePluginArgs.reporter);
