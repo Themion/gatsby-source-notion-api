@@ -65,52 +65,54 @@ export const getPropertyContent = (
   reporter: Reporter
 ): NormalizedValue => {
   switch (property.type) {
-    case 'unique_id':
-      return property.unique_id.number;
-    case 'title':
-      return blockToString(property.title, false);
-    case 'rich_text':
-      return blockToString(property.rich_text, false);
-    case 'number':
-      return property.number;
-    case 'select':
-      return property.select;
-    case 'multi_select':
-      return property.multi_select;
-    case 'status':
-      return property.status;
+    case 'checkbox':
+      return property.checkbox;
+    case 'created_by':
+      return getPropertyContentFromUser(property.created_by);
+    case 'created_time':
+      return property.created_time;
     case 'date':
       return property.date;
-    case 'people':
-      return property.people
-        .filter(isPropertyAccessible)
-        .map(getPropertyContentFromUser)
-        .filter((user) => !!user);
+    case 'email':
+      return property.email;
     case 'files':
       return property.files.map((file) => {
         const url = getPropertyContentFromFile(file, reporter);
         return url === null ? null : { name: file.name, url }
       }).filter(file => file !== null);
-    case 'checkbox':
-      return property.checkbox;
-    case 'url':
-      return property.url;
-    case 'email':
-      return property.email;
-    case 'phone_number':
-      return property.phone_number;
     case 'formula':
       return getPropertyContentFromFormula(property.formula, reporter);
-    case 'rollup':
-      return getPropertyContentFromRollup(property.rollup, reporter);
-    case 'created_by':
-      return getPropertyContentFromUser(property.created_by);
-    case 'created_time':
-      return property.created_time;
     case 'last_edited_by':
       return getPropertyContentFromUser(property.last_edited_by);
     case 'last_edited_time':
       return property.last_edited_time;
+    case 'multi_select':
+      return property.multi_select;
+    case 'number':
+      return property.number;
+    case 'people':
+      return property.people
+        .filter(isPropertyAccessible)
+        .map(getPropertyContentFromUser)
+        .filter((user) => !!user);
+    case 'phone_number':
+      return property.phone_number;
+    case 'relation':
+      return property.relation.map(({ id }) => id);
+    case 'rich_text':
+      return blockToString(property.rich_text, false);
+    case 'rollup':
+      return getPropertyContentFromRollup(property.rollup, reporter);
+    case 'select':
+      return property.select;
+    case 'status':
+      return property.status;
+    case 'title':
+      return blockToString(property.title, false);
+    case 'unique_id':
+      return property.unique_id.number;
+    case 'url':
+      return property.url;
     default:
       reporter.warn(`Property type '${property.type}' is not supported yet.`);
       return null;
