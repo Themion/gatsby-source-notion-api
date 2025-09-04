@@ -28,7 +28,7 @@ const createNodeClosure = (
     }
 
     await actions.createNode({
-      id: createNodeId(`${NODE_TYPE}-${databaseId}-${page.id}`),
+      id: page.id,
       title,
       properties,
       archived: page.archived,
