@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",
+    "@tanstack/query-core": "^5.102.8",
     "yaml": "^1.10.2"
   },
   "devDependencies": {
