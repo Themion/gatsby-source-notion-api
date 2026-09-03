@@ -28,6 +28,3 @@ export const mapAwaited = async <T, U>(
   for (const list of matrix) result.push(...(await list));
   return result;
 };
-
-export const wait = (millisecond: number) =>
-  new Promise((resolve) => setTimeout(resolve, millisecond));
